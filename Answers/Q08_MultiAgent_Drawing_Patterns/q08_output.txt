@@ -1,0 +1,19 @@
+Q8  Multi-agent creative drawing (Agent A = spiral, Agent B = star)
+Action space: 4 basic actions -> 7 after 3 combined actions
+Search space for a motif of 6 actions: 4^6 = 4,096 -> 7^6 = 117,649 (28.7x larger)
+round | agent    | best operator | fitness | novelty | aesth | archive
+    1 | A-spiral | compose       |   0.703 |   0.732 | 0.525 |       2
+    1 | B-star   | nest          |   0.616 |   0.499 | 0.641 |       3
+    2 | A-spiral | compose       |   0.739 |   0.646 | 0.702 |       5
+    2 | B-star   | compose       |   0.724 |   0.681 | 0.628 |       7
+    3 | A-spiral | compose       |   0.779 |   0.684 | 0.763 |      10
+    3 | B-star   | compose       |   0.735 |   0.677 | 0.661 |      13
+    4 | A-spiral | compose       |   0.779 |   0.684 | 0.763 |      16
+    4 | B-star   | compose       |   0.740 |   0.667 | 0.683 |      16
+    5 | A-spiral | compose       |   0.779 |   0.684 | 0.763 |      18
+    5 | B-star   | compose       |   0.749 |   0.669 | 0.703 |      20
+    6 | A-spiral | compose       |   0.793 |   0.672 | 0.810 |      23
+    6 | B-star   | compose       |   0.749 |   0.669 | 0.703 |      26
+Best drawing: compose by A-spiral (round 6), fitness 0.793
+Parents scored aesthetics A = 0.540, B = 0.547
+charts saved to images/

@@ -1,0 +1,26 @@
+A  start: 10 gates, 6 counters, area 100, shops landside, wait 14 | score 20.5
+step | action chosen (B)           | score
+   1 | e: waiting area +4          |  23.10
+   2 | d: shops one zone inward    |  25.60
+   3 | d: shops one zone inward    |  28.10
+   4 | d: shops one zone inward    |  42.60
+   5 | e: waiting area +4          |  49.90
+   6 | b: +1 immigration counter   |  50.75
+   7 | b: +1 immigration counter   |  51.60
+   8 | a: add a gate               |  59.56
+   9 | b: +1 immigration counter   |  61.97
+  10 | b: +1 immigration counter   |  67.07
+  11 | b: +1 immigration counter   |  68.95
+  12 | b: +1 immigration counter   |  70.65
+  13 | a: add a gate               |  74.74
+  14 | e: waiting area +4          |  75.87
+  15 | a: add a gate               |  77.88
+  16 | a: add a gate               |  78.68
+  17 | b: +1 immigration counter   |  79.40
+C  stopped at: 14 gates, 13 counters, area 100, shops near gates, wait 26 | score 79.4
+   votes 10/10, avg wait 36.1 min, space use 98%, senior index 0.97
+   moves at the stop: a blocked; b blocked; c blocked; d+ 73.9; d- 73.9; e blocked; e- 77.1
+random-restart hill climbing (12 random blueprints):
+   final scores: 82.1, 82.5, 54.8, 82.5, 81.1, 80.9, 66.8, 80.1, 81.5, 66.3, 82.1, 80.6
+   best: 18 gates, 13 counters, area 122, shops near gates, wait 36 | score 82.52
+charts saved to images/

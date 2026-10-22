@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q6 - Creative Product Agent with GA and Semi-Supervised Learning</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q6. A Creative Agent that Suggests Product Modifications (GA + Semi-Supervised Learning)</h1>
+</header>
+
+<div class="question"><b>Question.</b> Design an intelligent agent that suggests creative modifications to an existing product,
+using a genetic algorithm and semi-supervised learning. What changes to PEAS and the agent structure make it creative?
+Take a multi-agent scenario where co-operative creativity is shown.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>A company has one product and only a few past launch results. The agent does two jobs. First, it <b>learns what sells</b>
+from the few labelled launches plus many unlabelled ideas (semi-supervised learning). Second, it <b>invents variants</b> with a
+genetic algorithm (GA) and uses what it learned to score them. Creativity comes from the fitness: it rewards
+<i>predicted success + novelty &minus; cost</i>, not success alone. The agent hands back a short list of options. It does not give one verdict.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>The product is a <b>smart water bottle</b>. An idea is 8 genes: capacity, material, sensor, display, app, power, shape, price (8,748 possible variants).</li>
+  <li>Today's bottle: 500 ml, plastic, no sensor, no display, no app, coin cell, classic shape, budget price.</li>
+  <li>We know the outcome of <b>40 past launches</b> (20 hits, 20 flops) and have <b>400 unlabelled</b> new ideas. A hidden "market" decides real success. The agent never sees it. We use it only to test the final ideas. About 40% of random ideas would really succeed.</li>
+  <li>Novelty = how many genes differ from the nearest bottle in today's product line.</li>
+</ul>
+
+<h2>3. Design: GA + semi-supervised learning</h2>
+<table>
+  <tr><th style="width:24%">Part</th><th>What it does here</th></tr>
+  <tr><td>Chromosome</td><td>8 genes, each picks an option (e.g. sensor = intake tracker)</td></tr>
+  <tr><td>Semi-supervised learner</td><td>Self-training with logistic regression. It labels its own confident guesses and learns again, so the <b>learn set evolves</b></td></tr>
+  <tr><td>Fitness</td><td>w<sub>1</sub>&middot;P(success) + w<sub>2</sub>&middot;novelty &minus; w<sub>3</sub>&middot;cost</td></tr>
+  <tr><td>Operators</td><td>Tournament selection, uniform crossover (mix genes of two parents), mutation (15% per gene), elitism (keep the 2 best)</td></tr>
+  <tr><td>Exit</td><td>30 generations, then show the top 3 ideas. Real market results go back in as labels</td></tr>
+</table>
+
+<h2>4. What changes in PEAS and the agent structure?</h2>
+<p>A normal agent maximises one number in a fixed world. A creative agent changes all four parts of PEAS and adds two blocks
+to the agent structure.</p>
+<table>
+  <tr><th style="width:17%"></th><th>Ordinary product agent</th><th>Creative agent (the change)</th></tr>
+  <tr><td><b>P</b>erformance</td><td>Predicted sales</td><td>Success <b>+ novelty + usefulness &minus; cost</b>, checked by a <b>creativity calibrator</b></td></tr>
+  <tr><td><b>E</b>nvironment</td><td>Our own sales data</td><td><b>Open</b> and dynamic: competitors, customer reviews, IoT usage data, ideas from other products</td></tr>
+  <tr><td><b>A</b>ctuators</td><td>Report one best design</td><td><b>Generate</b> variants, combine features, and present <b>ranked choices</b></td></tr>
+  <tr><td><b>S</b>ensors</td><td>Sales figures</td><td>Also senses <b>previous performance and competing performance</b> and user reactions</td></tr>
+</table>
+<p>In the agent structure we add a <b>creativity evaluator</b> (the novelty score) and a <b>conceptual space expander</b>
+(crossover and mutation create gene combinations never launched). The learning agent's <i>problem generator</i> is the GA, and its
+<i>critic</i> is the market test.</p>
+
+<h2>5. Step by step</h2>
+<ol>
+  <li>Encode today's bottle and the 40 labelled launches as gene vectors.</li>
+  <li>Train the self-training model on labelled + unlabelled ideas to get P(success) for any variant.</li>
+  <li>Give each agent its own island of 20 random ideas and its own fitness weights.</li>
+  <li>Evolve: select, cross over, mutate. Every 5 generations the agents swap their best ideas (migration).</li>
+  <li>After 30 generations, show the top 3 ideas. Test them in the market and add the results as true labels.</li>
+</ol>
+<figure class="w70"><img src="images/q06_flowchart.png" alt="Flowchart"><figcaption>Figure 1. Flowchart of the creative agent. The loop on the right closes the cycle: market results become new labels.</figcaption></figure>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo">model &larr; SelfTraining(labelled launches, unlabelled ideas)      <span class="c"># semi-supervised</span>
+fitness_a(v) &larr; w1_a&middot;P_model(v) + w2_a&middot;novelty(v) &minus; w3_a&middot;cost(v)   <span class="c"># per agent a</span>
+island[a] &larr; 20 random ideas, for each agent a in {designer, critic, cost}
+<b>for</b> gen = 1 to 30:
+    <b>for each</b> agent a:
+        keep 2 best ideas (elitism)
+        <b>repeat</b> until island full:
+            p1, p2 &larr; tournament picks;  child &larr; uniform_crossover(p1, p2)
+            mutate each gene with probability 0.15
+    <b>if</b> gen is a multiple of 5: each island receives the best 2 ideas of the others
+top3 &larr; best ideas by shared value;  run market test
+add test results to labelled set;  retrain model          <span class="c"># the learn set evolves</span></pre>
+
+<h2>7. Multi-agent co-operative creativity</h2>
+<p>Three agents look at the same bottle with different eyes. All three share the same learned model, and they differ only in fitness weights (success, novelty, cost):</p>
+<table>
+  <tr><th>Agent</th><th>Cares about</th><th>Weights (P, novelty, cost)</th></tr>
+  <tr><td>Designer</td><td>bold, new ideas</td><td>0.5, 1.0, 0.0</td></tr>
+  <tr><td>Usability critic</td><td>will users like it?</td><td>1.0, 0.1, 0.1</td></tr>
+  <tr><td>Cost agent</td><td>cheap to build</td><td>0.6, 0.0, 0.8</td></tr>
+</table>
+<p>In the <b>co-operative</b> run the islands trade their best genes every 5 generations. Results, averaged over 10 random seeds:</p>
+<table>
+  <tr><th>Setup</th><th class="num">Mean best shared value</th><th class="num">Ideas that really succeed</th></tr>
+  <tr><td>Designer alone</td><td class="num">1.049</td><td class="num">90%</td></tr>
+  <tr><td>Usability critic alone</td><td class="num">1.121</td><td class="num">40%</td></tr>
+  <tr><td>Cost agent alone</td><td class="num">1.060</td><td class="num">0%</td></tr>
+  <tr class="hl"><td>Co-operative (islands + migration)</td><td class="num">1.117</td><td class="num">70%</td></tr>
+</table>
+<div class="note"><b>Honest reading.</b> The co-operative team is <i>not</i> the top scorer on the model's own value (the critic is 1.121 vs 1.117). It does
+<b>better on real market success than the critic (70% vs 40%) and the cost agent (0%)</b>, and its value is far above the designer's. Its main gain is robustness:
+it avoids the weak spots of any single agent. The designer's 90% is a lucky fit with this made-up market, and it loses on cost and model value.</div>
+<figure class="w80"><img src="images/q06_chart1_agents.png" alt="agents"><figcaption>Figure 2. Best shared value per generation (average of 10 seeds). Co-operative agents climb as high as the best single agent.</figcaption></figure>
+
+<h2>8. Worked example (real run)</h2>
+<p>Self-training labelled 305 of the 400 unlabelled ideas itself, so the learn set grew from 40 to 345. Test accuracy stayed about the same
+(0.73 supervised, 0.72 self-trained), so with so few labels the pseudo-labels did not add real accuracy. What did help was real feedback:
+after the 3 best ideas were tested, accuracy rose to <b>0.76</b>. The top 3 ideas the co-operative agents suggested:</p>
+<table>
+  <tr><th>#</th><th>Suggested bottle</th><th class="num">Value</th><th>Market test</th></tr>
+  <tr><td>1</td><td>1 L, plastic, intake tracker, LED ring, reminder app, coin cell, modular cap, premium</td><td class="num">1.110</td><td>success</td></tr>
+  <tr><td>2</td><td>1 L, plastic, temp sensor, LED ring, reminder app, coin cell, modular cap, premium</td><td class="num">1.081</td><td>success</td></tr>
+  <tr><td>3</td><td>750 ml, plastic, no sensor, no display, reminder app, coin cell, modular cap, mid</td><td class="num">1.067</td><td>flop</td></tr>
+</table>
+<p>Two of three succeeded. The ideas are creative: none was in the product line, and the "modular cap + app + sensor"
+combination is new. The flop shows why the agent returns <b>choices, not answers</b>: a human or a test still decides.</p>
+<figure class="w70"><img src="images/q06_chart2_learn_set.png" alt="learn set"><figcaption>Figure 3. Labelled + pseudo-labelled set size (bars) and test accuracy (line). Accuracy moves from 0.72 to 0.76 once real market labels arrive.</figcaption></figure>
+
+<h2>9. Code and real run</h2>
+<figure class="shot"><img src="images/q06_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The GA function (lines 133-154) and the real terminal output of the run.</figcaption></figure>
+
+<h2>10. Summary</h2>
+<div class="key">Semi-supervised learning supplies a success score from very few labels, and the GA turns it into new ideas.
+Adding novelty and cost to the fitness, sensing the market, and generating ranked choices make the agent creative. Three agents with
+different goals, sharing genes, give a team that is nearly as good as the best single agent on the model's value and much more
+dependable in the real market. The honest limit: with 40 labels, pseudo-labels did not raise accuracy, and real feedback did.</div>
+
+<p class="files">Files in this folder: <code>q06_code.py</code> (source), <code>q06_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q06_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

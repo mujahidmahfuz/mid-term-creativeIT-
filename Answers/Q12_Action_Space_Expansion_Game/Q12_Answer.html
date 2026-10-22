@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q12 - Expanding the Action Space in a Game</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q12. Expanding the Action Space by Combining Two Basic Actions</h1>
+</header>
+
+<div class="question"><b>Question.</b> In the Q11 example, can we expand the action space? Imagine every action is a
+combination of two basic actions. Define the basic actions for a particular game, expand the action space, and use that
+to expand the search space. The goal can be defined as a function of action space and search space.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>In Q11 we only used simple moves: one feature, one step. That is the <b>action space</b>. The <b>search space</b> is all the
+states those moves can reach. A creative agent does not only search harder. It also invents <i>new moves</i>. The easiest way
+is to glue two basic actions into one: walk up and right in one go (a diagonal), or jump and move right (a leap over a wall).
+More moves means more places the agent can reach, so <b>expanding the action space expands the search space</b> too.</p>
+
+<h2>2. Can we expand the action space? Yes</h2>
+<p>Yes, and we can do it at the same time as we expand the search space. In Q11 each iteration widened the search space
+with a bigger Manhattan radius. Here each new combined action also widens it, because every state gets more neighbours
+(we <i>redefine the neighbour</i>). The two effects stack.</p>
+
+<h2>3. Assumptions</h2>
+<ul>
+  <li>The game is a 9&times;9 treasure maze. The agent starts at <b>S</b>, collects five coins (worth 3, 5, 4, 2 and 6) and gets <b>10 points</b> for reaching the exit <b>E</b>.</li>
+  <li>Basic actions: <b>Up, Down, Left, Right, Jump</b>. Jump is only useful together with a direction.</li>
+  <li>A combined action is two basic actions done together in one move. It counts as one step.</li>
+  <li>Walls (#) block a move. A leap moves two cells and can land only on a free cell, but it jumps over a wall in between.</li>
+</ul>
+
+<h2>4. Defining the basic and combined actions</h2>
+<table>
+  <tr><th style="width:26%">Kind</th><th>Actions</th><th class="num">Count</th></tr>
+  <tr><td>Basic movement</td><td>Up, Down, Left, Right</td><td class="num">4</td></tr>
+  <tr><td>Pairs of basic actions</td><td>5 basic actions give C(5,2) = 10 pairs</td><td class="num">10</td></tr>
+  <tr><td>Cancelled pairs (no effect)</td><td>Up+Down, Left+Right</td><td class="num">2</td></tr>
+  <tr><td>Diagonal combinations</td><td>Up+Left, Up+Right, Down+Left, Down+Right</td><td class="num">4</td></tr>
+  <tr><td>Leap combinations</td><td>Jump+Up, Jump+Down, Jump+Left, Jump+Right</td><td class="num">4</td></tr>
+  <tr class="hl"><td>Action space</td><td>4 basic &rarr; <b>12 actions</b> in total</td><td class="num">12</td></tr>
+</table>
+<p>Real output: "pairs of basic actions: 10, cancelled: Up+Down, Left+Right" and "action space: 4 -> 12 moves".</p>
+
+<h2>5. Step-by-step approach</h2>
+<ol>
+  <li>List the basic actions.</li>
+  <li>Pair every two of them. Drop pairs that cancel out.</li>
+  <li>Add the surviving pairs to the action set A.</li>
+  <li>Run iterative deepening: for depth d = 1, 2, 3 &hellip; search all move sequences of length d using A.</li>
+  <li>Record the goal value G(A, d), the best score reachable in d moves, and the best path.</li>
+  <li>Compare with the run that uses only the basic actions.</li>
+</ol>
+<figure class="w70"><img src="images/q12_flowchart.png" alt="flowchart"><figcaption>Figure 1. Flowchart: build the combined actions, then search with iterative deepening.</figcaption></figure>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> ExpandActions(basic):
+    A &larr; basic moves
+    <b>for each</b> pair (a, b) in basic:
+        <b>if</b> a and b cancel: <b>continue</b>               <span class="c"># Up + Down = nothing</span>
+        <b>if</b> Jump in (a, b): add "leap 2 cells" in the other direction
+        <b>else</b>: add "diagonal" = a + b                    <span class="c"># Up + Right</span>
+    <b>return</b> A
+
+<b>function</b> SearchWithActions(A, S0, max_d):
+    <b>for</b> d = 1 .. max_d:                              <span class="c"># iterative deepening</span>
+        (states, value, path) &larr; DLS(S0, A, depth = d)
+        G(A, d) &larr; value                                <span class="c"># goal = f(action space, search space)</span>
+    <b>return</b> best path
+
+<b>function</b> DLS(state, A, left):
+    <b>if</b> value(state) &gt; best: best &larr; value(state)
+    <b>if</b> left = 0: <b>return</b>
+    <b>for each</b> action in A:
+        next &larr; apply(action, state)
+        <b>if</b> next is free: DLS(next, A, left - 1)</pre>
+
+<h2>7. How much does the search space grow?</h2>
+<p>First on an <b>open grid with no walls</b>, so we can check the maths. With 4 moves, the cells reachable in d moves
+are 2d&sup2; + 2d + 1. With the 4 diagonals added, they are (2d + 1)&sup2;. The code counts them for real:</p>
+<table>
+  <tr><th class="num">d</th><th class="num">4 basic<br>(theory 2d&sup2;+2d+1)</th><th class="num">+ diagonals<br>(theory (2d+1)&sup2;)</th><th class="num">+ diagonals + jumps</th></tr>
+  <tr><td class="num">1</td><td class="num">5 (5)</td><td class="num">9 (9)</td><td class="num">13</td></tr>
+  <tr class="hl"><td class="num">2</td><td class="num">13 (13)</td><td class="num">25 (25)</td><td class="num">41</td></tr>
+  <tr><td class="num">3</td><td class="num">25 (25)</td><td class="num">49 (49)</td><td class="num">85</td></tr>
+  <tr><td class="num">4</td><td class="num">41 (41)</td><td class="num">81 (81)</td><td class="num">145</td></tr>
+  <tr><td class="num">5</td><td class="num">61 (61)</td><td class="num">121 (121)</td><td class="num">221</td></tr>
+</table>
+<p>The counts match the formulas exactly. At d = 2, <b>13 cells become 25</b>, and with leaps 41. The ratio keeps growing with d.</p>
+
+<h2>8. The goal as a function of action space and search space</h2>
+<p>Define the goal value as <b>G(A, S<sub>d</sub>) = the best score (coins + exit bonus) the agent can reach using actions A within the
+search space S<sub>d</sub> (all states within d moves)</b>. G depends on both. Change A and G changes, even for the same d.</p>
+<table>
+  <tr><th class="num">d</th><th class="num">states, basic</th><th class="num">G(basic)</th><th class="num">states, combined</th><th class="num">G(combined)</th></tr>
+  <tr><td class="num">2</td><td class="num">5</td><td class="num">0</td><td class="num">10</td><td class="num">4</td></tr>
+  <tr><td class="num">4</td><td class="num">9</td><td class="num">4</td><td class="num">41</td><td class="num">10</td></tr>
+  <tr><td class="num">6</td><td class="num">17</td><td class="num">4</td><td class="num">134</td><td class="num">10</td></tr>
+  <tr class="hl"><td class="num">8</td><td class="num">27</td><td class="num">10</td><td class="num">340</td><td class="num">20</td></tr>
+  <tr><td class="num">10</td><td class="num">39</td><td class="num">10</td><td class="num">623</td><td class="num">22</td></tr>
+</table>
+<p>With 8 moves the basic agent scores 10 and the combined agent scores <b>20</b>. In effect the goal moved: it is only
+reachable with the bigger action space. The basic agent gets stuck at 10 for d = 8 to 10, and ends at (8, 0) without ever reaching the exit.
+The combined agent reaches the exit at (8, 8) along the bottom corridor.</p>
+<figure><img src="images/q12_chart1_search_space.png" alt="search space growth"><figcaption>Figure 2. Left: reachable cells on the open grid (crosses mark the theory). Right: goal value G for both action sets in the maze.</figcaption></figure>
+<figure class="w50"><img src="images/q12_chart2_game_paths.png" alt="paths on the game map"><figcaption>Figure 3. Best 8-move paths. Blue uses the 4 basic moves (value 10). Orange uses combined moves (value 20) and reaches the exit.</figcaption></figure>
+
+<h2>9. Using this together with the Manhattan IDS of Q11</h2>
+<p>Q11 expanded the search space by raising the depth d. Q12 expands it a second way, by adding actions. Doing both gives the
+largest effect: at d = 10 the combined agent looks at 623 states instead of 39 and scores 22 instead of 10. The price is more
+work. The search space grows fast, so in practice we add only the combined actions that look useful, and judge each new
+action by its payoff (here, the goal value G).</p>
+
+<h2>10. Code and real run</h2>
+<figure class="shot w80"><img src="images/q12_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The depth-limited search (lines 68-88) and the real terminal output.</figcaption></figure>
+
+<h2>11. Summary</h2>
+<div class="key">Pair two basic actions into one and the action space grows from 4 to 12. The search space grows with
+it (13 to 25 reachable cells at d = 2 with diagonals, 41 with leaps) and the goal G(A, S<sub>d</sub>) improves from 10 to 20 at
+d = 8. Expanding the action space and the search space together is a clear, measurable way to be more creative than a
+search that only goes deeper.</div>
+
+<p class="files">Files in this folder: <code>q12_code.py</code> (source), <code>q12_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q12_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

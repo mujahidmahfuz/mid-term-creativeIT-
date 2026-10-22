@@ -1,0 +1,13 @@
+Q10  Utility-based agent + RL that expands its action space (design a phone)
+Basic actions: 24 | steps per design: 3 | expansion at episode 500
+Action space: 24 -> 28 actions (+4 macro-actions)
+New macro-actions (found by the agent, each = 2 features in 1 step):
+  body=2 + screen=1
+  screen=1 + ai=2
+  battery=2 + sensors=1
+  body=2 + battery=2
+Avg utility, episodes    1-500 : plain 1.92 | creative 1.92
+Avg utility, episodes  501-1000: plain 2.92 | creative 3.13
+Avg utility, episodes 1001-1500: plain 2.98 | creative 4.68
+Final greedy design utility: plain 3.11 | creative 6.46
+charts saved to images/

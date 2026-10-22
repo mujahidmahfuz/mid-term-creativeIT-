@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q15 - Product Recommendation as Heuristic Search</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q15. Product Recommendation as Heuristic Search</h1>
+</header>
+
+<div class="question"><b>Question.</b> Model product recommendation with a heuristic search algorithm: define the heuristic
+function, start state, goal state, actions and neighbouring states. Trace a hill-climbing path on a 10-product set and
+discuss local and global maxima. Handle multiple goals, give a vector transition with correction using A*, and suggest an
+interesting modification of hill climbing.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>Think of each product as a point described by a few numbers. The shopper is also a point: the product they would love. A
+recommender starts from a popular product and keeps stepping to a more similar product that is closer to the shopper's taste.
+That is search. It is quick, but a greedy search can stop on a "pretty good" product when a better one sits one category away.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>10 products in 4 categories (phone, tablet, watch, audio), each rated 0&ndash;1 on <b>affordability, quality, battery, style</b>.</li>
+  <li>The shopper's preference vector is <b>u = (0.45, 0.80, 0.85, 0.65)</b>: wants quality and battery, medium price.</li>
+  <li>The most popular product, <b>P1 Basic phone</b>, is the start state.</li>
+  <li>Hill climbing moves only to similar products <b>in the same category</b> (a small, safe change). A* may also cross categories.</li>
+</ul>
+
+<h2>3. The search model</h2>
+<table>
+  <tr><th style="width:26%">Element</th><th>Definition</th></tr>
+  <tr><td>Heuristic h(p)</td><td>Distance between the product vector and u: h(p) = ||p &minus; u||. Lower is better, 0 is a perfect match.</td></tr>
+  <tr><td>Start state</td><td>P1 Basic phone (the most popular item)</td></tr>
+  <tr><td>Goal state</td><td>The product with the lowest h, or any product with h &le; &epsilon;</td></tr>
+  <tr><td>Actions</td><td>Move to a similar product (swap to a nearby model; for A*, also to another category)</td></tr>
+  <tr><td>Neighbours</td><td>Hill climbing: other products of the same category. A*: the 3 most similar products overall.</td></tr>
+  <tr><td>Path cost g (A*)</td><td>Feature distance travelled, i.e. how big a jump the shopper must accept</td></tr>
+</table>
+<p>The real h values for u: P6 0.21, P5 0.23, P3 0.28, P4 0.34, P10 0.50, P8 0.61, P2 0.66, P7 0.67, P9 0.71, P1 0.89.
+The <b>global best is P6 Pro tablet (h = 0.212)</b>.</p>
+
+<h2>4. Step-by-step</h2>
+<ol>
+  <li>Compute h for the current product and list its same-category neighbours.</li>
+  <li>Pick the neighbour with the lowest h (steepest ascent in utility).</li>
+  <li>If it is better, move there and repeat. If not, stop and recommend the current product.</li>
+</ol>
+<figure class="w70"><img src="images/q15_flowchart.png" alt="flowchart"><figcaption>Figure 1. Flowchart of hill climbing for recommendation.</figcaption></figure>
+
+<h2>5. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> HillClimbRecommend(start, u):
+    current &larr; start
+    <b>loop</b>:
+        best &larr; neighbour of current with the lowest h(p) = ||p &minus; u||
+        <b>if</b> h(best) &ge; h(current): <b>return</b> current         <span class="c"># local maximum of utility</span>
+        current &larr; best
+
+<b>function</b> AStar(start, goal):
+    OPEN &larr; {start with f = 0};  g(start) &larr; 0
+    <b>while</b> OPEN not empty:
+        n &larr; node in OPEN with lowest f = g(n) + h(n)     <span class="c"># h(n) = ||p_n &minus; p_goal||</span>
+        <b>if</b> n = goal: <b>return</b> path
+        <b>for each</b> neighbour m of n: g(m) &larr; g(n) + ||p_n &minus; p_m||; add m to OPEN
+
+<b>function</b> Correct(u, liked, skipped):                        <span class="c"># Rocchio style</span>
+    <b>return</b> u + &alpha;&middot;(p_liked &minus; u) &minus; &beta;&middot;(p_skipped &minus; u)</pre>
+
+<h2>6. Hill-climbing traversal (worked example)</h2>
+<table>
+  <tr><th class="num">Step</th><th>Product</th><th class="num">h</th><th>What happened</th></tr>
+  <tr><td class="num">0</td><td>P1 Basic phone</td><td class="num">0.890</td><td>start</td></tr>
+  <tr class="hl"><td class="num">1</td><td>P3 Mid phone</td><td class="num">0.278</td><td>best phone, a big gain; no other phone is closer, so <b>stop</b></td></tr>
+</table>
+<p>The search stops at <b>P3 (h = 0.278)</b> while the true best is P6 Pro tablet (0.212).</p>
+
+<h2>7. Local maxima and the global maximum</h2>
+<p>The global maximum is <b>P6 Pro tablet</b>. The real run found three <b>local maxima</b>: <b>P3 Mid phone, P8 Smart watch and
+P10 Earbuds</b>. Each is the best product inside its own category, so no same-category move improves it. Hill climbing
+reached the global best from only <b>3 of 10</b> start products (the tablets). The cause is the narrow neighbourhood: the
+better product is one category away and cannot be seen.</p>
+<figure><img src="images/q15_chart1_product_map.png" alt="product map"><figcaption>Figure 2. Products on a 2-D PCA map. Left: hill climbing stalls at P3. Right: the A* routes before and after feedback. The stars are u and the corrected u'.</figcaption></figure>
+<figure class="w90"><img src="images/q15_chart2_h_values.png" alt="h values"><figcaption>Figure 3. h along the paths, and all products ranked by h.</figcaption></figure>
+
+<h2>8. Handling multiple goals</h2>
+<p>Add a second shopper (a bargain hunter, u<sub>B</sub> = (0.85, 0.40, 0.50, 0.40)). Their best product is P9. Three options:</p>
+<ul>
+  <li><b>Weighted sum:</b> score = 0.7&middot;h<sub>A</sub> + 0.3&middot;h<sub>B</sub>. Top 3 in the run: <b>P5, P3, P6</b>.</li>
+  <li><b>Pareto set:</b> keep every product that no other beats on both goals. Result: <b>P2, P3, P5, P6, P9</b>. Show these as choices, not answers.</li>
+  <li><b>Top-k or multi-start:</b> run the search once per goal and merge the lists.</li>
+</ul>
+<figure class="w70"><img src="images/q15_chart3_multi_goal.png" alt="pareto"><figcaption>Figure 4. Two goals: green points form the Pareto set.</figcaption></figure>
+
+<h2>9. Vector transition with correction using A*</h2>
+<p>A* uses f = g + h. Here g is the feature distance already travelled and h is the straight-line distance to the goal. It
+can cross categories, so it finds the tablet.</p>
+<ul>
+  <li><b>Before feedback</b> (goal P6): <b>P1 &rarr; P2 &rarr; P3 &rarr; P6</b>, with g = 1.112.</li>
+  <li><b>Feedback:</b> the shopper likes P3 and skips P5. The vector is corrected with &alpha; = 0.5, &beta; = 0.3:
+  u&prime; = u + 0.5(p<sub>P3</sub> &minus; u) &minus; 0.3(p<sub>P5</sub> &minus; u) = <b>(0.50, 0.79, 0.77, 0.62)</b>.</li>
+  <li><b>After correction</b> the nearest product is now P3, so A* gives <b>P1 &rarr; P2 &rarr; P3</b>, with g = 0.630.</li>
+</ul>
+<p>The target vector moved toward what the shopper actually liked, and the route got shorter and safer.</p>
+
+<h2>10. Interesting modifications to hill climbing</h2>
+<table>
+  <tr><th style="width:28%">Idea</th><th>Result in this run</th></tr>
+  <tr><td>Random restart (4 runs)</td><td>Ends at P6, h = 0.212, the global best</td></tr>
+  <tr><td>Annealing + serendipity jumps (accept a worse product sometimes, with a 20% chance of a random jump; cooling lowers the risk)</td><td>17 of 20 runs find P6 from the same start that traps plain hill climbing</td></tr>
+  <tr><td>Tabu list</td><td>Remember seen products so the search never loops back</td></tr>
+  <tr><td>Humanised moves</td><td>Mood or season changes h; a deliberate "surprise at the critical point" suggestion near the end keeps it fresh</td></tr>
+</table>
+<p>Plain hill climbing: 3 of 10 starts succeed. Restarts and annealing with jumps repair the gap, because they can leave a local maximum.</p>
+
+<h2>11. Code and real run</h2>
+<p><code>q15_code.py</code> defines the 10 products, h, hill climbing, A*, the correction, restarts and annealing, and draws every chart.</p>
+<figure class="shot w80"><img src="images/q15_ide_run.png" alt="IDE screenshot"><figcaption>Figure 5. Hill climbing and A* functions (lines 59-88) and the real terminal output.</figcaption></figure>
+
+<h2>12. Summary</h2>
+<div class="key">Recommendation fits heuristic search: product = state, h = distance to the shopper's taste, neighbours = similar
+products. Hill climbing is fast but failed to reach the best product from 7 of 10 starts. A* with a corrected preference vector plans a smoother route,
+and restarts, annealing and serendipity jumps reach the global best.</div>
+
+<p class="files">Files in this folder: <code>q15_code.py</code> (source), <code>q15_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q15_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q10 - Creative Agent: Expanding Search and Action Space with RL</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q10. Intelligent vs Creative Agent and Search, and Expanding the Action Space with RL</h1>
+</header>
+
+<div class="question"><b>Question.</b> Explain intelligent agent and creative agent, intelligent search and creative search.
+If a creative agent must expand its search space and action space, how can we write a function for it? Take product design
+with a utility-based agent and reinforcement learning to expand the action space. Explain different options.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>An <b>intelligent</b> agent is very good at reaching a goal with the moves it already has. A <b>creative</b> agent also
+asks: <i>"Do I have the right moves at all?"</i> If the answer is no, it invents new moves. In product design this means
+the agent does not only pick features one by one. It notices which feature <i>pairs</i> work well together and turns each pair
+into a single new action. The agent's action space grows, so the space of designs it can reach grows too.</p>
+
+<h2>2. Intelligent agent vs creative agent</h2>
+<table>
+  <tr><th style="width:20%"></th><th>Intelligent agent</th><th>Creative agent</th></tr>
+  <tr><td>Aim</td><td>Rational: maximise the performance measure</td><td>Rational <b>but non-obvious</b>: also novel and useful</td></tr>
+  <tr><td>Structure</td><td>Agent = architecture + program</td><td>+ <b>creativity calibrator</b> and <b>conceptual space expander</b></td></tr>
+  <tr><td>PEAS</td><td>Fixed P, E, A, S</td><td>Asks "what could be different?" for P, E, A and S</td></tr>
+  <tr><td>Actions</td><td>Fixed action set</td><td>Creates new actions (exploration, analogy, combination)</td></tr>
+  <tr><td>Learning</td><td>Improves its policy</td><td>The learn set evolves, so the algorithm evolves, so the outcome evolves</td></tr>
+</table>
+
+<h2>3. Intelligent search vs creative search</h2>
+<table>
+  <tr><th style="width:20%"></th><th>Intelligent search</th><th>Creative search</th></tr>
+  <tr><td>Space</td><td>Search the given space efficiently</td><td>Create, discover or invent new options</td></tr>
+  <tr><td>Neighbours</td><td>Fixed neighbour definition</td><td>Redefines the neighbour</td></tr>
+  <tr><td>Nodes</td><td>Expands existing nodes</td><td>Combines two or more nodes (merging states)</td></tr>
+  <tr><td>Actions</td><td>Uses the action set as given</td><td>Creates new sets of actions</td></tr>
+  <tr><td>Goal</td><td>Fixed goal test</td><td>Goals may change (dynamic goals)</td></tr>
+  <tr><td>Result</td><td>Obvious best answer</td><td>Useful, surprising choices</td></tr>
+</table>
+
+<h2>4. Assumptions</h2>
+<ul>
+  <li>A phone has 6 slots (screen, battery, camera, body, sensors, AI) with 4 options each.</li>
+  <li><b>Basic action</b> = fix one slot to one option, giving 6 &times; 4 = <b>24 actions</b>. The agent has only <b>3 steps</b> per design.</li>
+  <li><b>Utility</b> = sum of feature quality + hidden <b>synergy bonuses</b> for 3 feature pairs (for example the right body with the right screen).
+  The agent does not know the pairs. It must discover them.</li>
+  <li>The agent is a utility-based learner using epsilon-greedy Q-learning. It runs 1,500 design episodes and expands its actions at episode 500.</li>
+</ul>
+
+<h2>5. A function that expands the search and action space</h2>
+<p>The idea: look at the best designs built so far and find <b>action pairs that keep appearing</b>. Each pair becomes a new
+macro-action that sets two slots in one step. With 3 steps, the agent can now fill up to 6 slots, so designs that were unreachable become reachable.</p>
+<pre class="pseudo"><b>function</b> expand(actions A, best_runs R):
+    pairs &larr; count every consecutive pair (a<sub>i</sub>, a<sub>i+1</sub>) in the top runs R
+    <b>for each</b> pair (a, b) among the top-k most frequent:
+        <b>if</b> (a, b) not in A:  A.add( macro(a, b) )          <span class="c"># new action = a then b in one step</span>
+    <b>return</b> A                                                  <span class="c"># bigger action space, bigger search space</span>
+
+<b>function</b> CreativeRL(A, episodes, warmup):
+    <b>for</b> ep = 1 to episodes:
+        <b>if</b> ep = warmup + 1: A &larr; expand(A, top 60 runs);  reset Q
+        design &larr; run epsilon-greedy episode using actions in A
+        reward &larr; utility(design)
+        update Q(state, action) toward reward
+    <b>return</b> Q, A</pre>
+<figure class="w70"><img src="images/q10_flowchart.png" alt="Q10 flowchart"><figcaption>Figure 1. Flowchart of the utility-based RL agent that expands its action space.</figcaption></figure>
+
+<h2>6. Step-by-step approach</h2>
+<ol>
+  <li>Start with 24 basic actions and the utility function (the agent's "happiness" measure).</li>
+  <li>Run design episodes. Each has 3 steps. The agent picks mostly the best-known action and sometimes a random one.</li>
+  <li>Score the finished phone with the utility function and update the Q-values with that reward.</li>
+  <li>After the warm-up (episode 500), look at the 60 best runs and mine the most frequent action pairs.</li>
+  <li>Add them as macro-actions. Clear the old Q-values, because the action list has changed.</li>
+  <li>Keep learning with the bigger action set. Compare with an agent whose actions never grow.</li>
+</ol>
+
+<h2>7. Worked example (real run)</h2>
+<p>The agent found these four macro-actions, which raised the action space from <b>24 to 28</b>:</p>
+<table>
+  <tr><th>New macro-action</th><th>Is it a hidden synergy?</th></tr>
+  <tr><td>body = 2 + screen = 1</td><td>Yes (bonus +2.0)</td></tr>
+  <tr><td>battery = 2 + sensors = 1</td><td>Yes (bonus +2.5)</td></tr>
+  <tr><td>screen = 1 + ai = 2</td><td>No, a lucky pair</td></tr>
+  <tr><td>body = 2 + battery = 2</td><td>No, a lucky pair</td></tr>
+</table>
+<p>Two of the four were real synergies the agent had never been told about. Utility before and after the expansion:</p>
+<table>
+  <tr><th>Episodes</th><th class="num">Fixed 24 actions</th><th class="num">With expansion</th></tr>
+  <tr><td>1&ndash;500 (same for both)</td><td class="num">1.92</td><td class="num">1.92</td></tr>
+  <tr><td>501&ndash;1000</td><td class="num">2.92</td><td class="num">3.13</td></tr>
+  <tr><td>1001&ndash;1500</td><td class="num">2.98</td><td class="num">4.68</td></tr>
+  <tr class="hl"><td>Final greedy design</td><td class="num">3.11</td><td class="num">6.46</td></tr>
+</table>
+<p>The fixed agent stalls near 3 because three single-feature steps cannot reach the synergies. The creative agent ends
+<b>about 2 times higher</b> (6.46 vs 3.11) with the same three steps. Note the short dip just after episode 500 in Figure 2: we
+clear the Q-table when the actions change, so the agent has to relearn. The extra learning cost pays off later.</p>
+<figure><img src="images/q10_chart1_learning_curve.png" alt="learning curve"><figcaption>Figure 2. Left: utility per episode (50-episode average). Right: number of actions over time.</figcaption></figure>
+<figure class="w60"><img src="images/q10_chart2_final_utility.png" alt="final utility"><figcaption>Figure 3. Utility of the final greedy design.</figcaption></figure>
+
+<h2>8. Different options to expand the action space</h2>
+<table>
+  <tr><th style="width:27%">Option</th><th>What it does</th><th>Product design example</th></tr>
+  <tr><td><b>Macro-actions (options)</b></td><td>Turn frequent successful sequences into one action. <i>Used in our run.</i></td><td>"Fold-able body + flexible screen" as one step</td></tr>
+  <tr><td>Parameterised actions</td><td>Make an action continuous instead of a fixed choice</td><td>Battery size from 3,000 to 6,000 mAh</td></tr>
+  <tr><td>Analogy / transfer</td><td>Copy actions that worked in another domain</td><td>Camera stabiliser ideas from drones</td></tr>
+  <tr><td>Human co-creator</td><td>A designer suggests a new action; the agent tests it</td><td>"Add a solar back panel"</td></tr>
+  <tr><td>Curiosity reward</td><td>Give extra reward for reaching new, unseen states</td><td>Tries rarely used feature mixes</td></tr>
+  <tr><td>GA over action sequences</td><td>Evolve sequences with crossover and mutation, keep the fittest as new actions</td><td>Mix two good build orders</td></tr>
+  <tr><td>New sensor / modality (IoT)</td><td>A new sensor adds a dimension to the space</td><td>Add a gas or health sensor slot</td></tr>
+</table>
+
+<h2>9. Code and real run</h2>
+<p><code>q10_code.py</code> trains both agents, mines the macro-actions and saves the charts.</p>
+<figure class="shot"><img src="images/q10_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The <code>expand_actions()</code> and <code>run_episode()</code> functions with the real terminal output.</figcaption></figure>
+
+<h2>10. Summary</h2>
+<div class="key">An intelligent agent searches well inside the space it is given. A creative agent also changes the space:
+it creates new actions and redefines neighbours. By mining its best action pairs into macro-actions, the RL agent grew its
+action set from 24 to 28 and nearly doubled its final utility (3.11 to 6.46) in the same three steps. Other options are
+parameterised actions, analogy, human co-creators, curiosity and genetic search over action sequences.</div>
+
+<p class="files">Files in this folder: <code>q10_code.py</code> (source), <code>q10_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q10_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

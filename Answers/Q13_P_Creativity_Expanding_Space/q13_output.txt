@@ -1,0 +1,24 @@
+Q13  P-creativity as a special case of H-creativity (2-D conceptual space)
+start idea j=(2.0, 2.0), value 12; archives: history 30, agent 7
+stage radius examined kept eliminated created
+    1    1.0        7    2          5       0
+    1    2.0       22    6         16       0
+    1    3.0       21   15          6       6
+    2    1.0        5    5          0       0
+    2    2.0       15   15          0       0
+    2    3.0       26   26          0       6
+    3    1.0        7    7          0       0
+    3    2.0       13   13          0       0
+    3    3.0       21   21          0       6
+stopped after 3 stages; centre moved j -> (4.1,4.5) -> (3.4,7.9)
+Top-ranked final set: value | novelty_P | novelty_H | P-creative | H-creative
+  ( 3.3, 8.2)  85.3 |  2.76 |  1.76 | yes | yes
+  ( 3.4, 7.9)  85.0 |  2.59 |  1.44 | yes | yes
+  ( 3.0, 8.3)  83.5 |  2.81 |  2.01 | yes | yes
+  ( 3.1, 8.4)  83.4 |  2.93 |  2.05 | yes | yes
+  ( 3.8, 8.1)  83.1 |  3.03 |  1.60 | yes | yes
+  ( 3.8, 8.2)  83.1 |  3.09 |  1.69 | yes | yes
+  ( 3.9, 8.2)  82.7 |  3.14 |  1.72 | yes | yes
+  ( 3.5, 8.6)  82.4 |  3.22 |  2.09 | yes | yes
+all 117 states: P-creative 97, H-creative 53, H inside P: True
+charts saved to images/

@@ -1,0 +1,26 @@
+PART A  GBFS with the week-1 heuristic
+  step | design change              | h(n)
+     0 | start design               |  55.8
+     1 | images -> lazy-loaded      |  46.6
+     2 | cta -> sticky              |  38.6
+     3 | hero -> static-image       |  31.4
+     4 | nav -> simple              |  25.0
+     5 | layout -> single-page      |  19.4
+  final design: single-page, simple, static-image, sticky, lazy-loaded
+PART B  Same search, dynamic heuristic (week-4 weights)
+  step | design change              | h(n)
+     0 | start design               |  58.3
+     1 | images -> lazy-loaded      |  47.5
+     2 | nav -> hamburger           |  39.1
+     3 | cta -> sticky              |  31.5
+     4 | hero -> static-image       |  24.5
+     5 | layout -> single-page      |  17.9
+  final design: single-page, hamburger, static-image, sticky, lazy-loaded
+PART C  GA over chatbot decision trees (population = 40)
+  gen  0 | best fitness 0.480 | avg 0.190 | best accuracy 51%
+  gen 15 | best fitness 0.592 | avg 0.502 | best accuracy 61%
+  gen 30 | best fitness 0.766 | avg 0.515 | best accuracy 79%
+  gen 45 | best fitness 0.821 | avg 0.508 | best accuracy 86%
+  gen 60 | best fitness 0.888 | avg 0.679 | best accuracy 93%
+  best chatbot tree: accuracy 93%, depth 4
+charts saved to images/

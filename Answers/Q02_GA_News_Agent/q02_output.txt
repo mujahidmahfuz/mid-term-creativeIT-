@@ -1,0 +1,17 @@
+Operators on the story 'SHOCK: city bridge collapses, thousands trapped!':
+  L crossover          -> SHOCK: city bridge collapses | Council inspects Monday
+  D insert fact        -> SHOCK: city bridge collapses, thousands trapped! Officials confirm 2 people hurt.
+  R mutate tone        -> Bridge section collapses in city; rescue under way
+  U delete sensational -> City bridge collapses, thousands trapped
+Map: 7x12, 33 black squares. Population 60, genes 30.
+ gen | best fitness | avg fitness
+   0 |        0.399 | -0.028
+   5 |        0.833 | 0.349
+  10 |        0.883 | 0.586
+  20 |        0.889 | 0.671
+  30 |        0.891 | 0.685
+  54 |        0.904 | 0.805
+Exit at generation 54: goal reached, no gain for 15 generations
+Best path: 21 moves, reaches G: True, black squares visited: 2, black-run violations: 0, checkpoints C/D visited: 2
+Operators used: LUULLLUUUUDDRLLUDLLLD
+charts saved to images/

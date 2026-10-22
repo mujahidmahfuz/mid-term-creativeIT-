@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q14 - K-means + KNN Semi-Supervised Learning for Cultural Tourism</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q14. K-means + KNN as Semi-Supervised Learning for Cultural Tourism</h1>
+</header>
+
+<div class="question"><b>Question.</b> Can K-means clustering and KNN be combined into semi-supervised learning? Can we
+use it to cluster tourist destinations and organise a tour from a cultural point of view? How can Euclidean and Hamming
+distance be combined here? How can we introduce systemic creativity? Refer to Diagram 6 and modify it into a
+distribution based on cultural preferences.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>We have many destinations but only a few carry a cultural label. <b>K-means</b> needs no labels: it simply finds
+natural groups. A handful of <b>labelled seed cities</b> tells us what each group means. <b>KNN</b> then checks every
+city against its nearest neighbours, fixes doubtful labels and labels brand-new cities. Structure comes from all the
+data and meaning comes from a few labels. That mix is exactly <b>semi-supervised learning</b>.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>The 20 cities of Diagram 6. Growth (%), spend per visit ($) and visits (millions, from the bubble size) are
+  <b>approximate readings</b> of the chart.</li>
+  <li>Each city gets 8 yes/no cultural attributes (our judgement): heritage, religious, art, street food, shopping,
+  nightlife, nature, skyline.</li>
+  <li>Only <b>4 of 20</b> cities are labelled, one per category: Rome = Heritage &amp; Faith, Paris = Art &amp;
+  Lifestyle, Bangkok = Street Food &amp; Markets, Dubai = Modern &amp; Shopping.</li>
+  <li>The traveller is a "culture lover" (heritage, religious, art, nature) who spends at most $1,200 per visit.</li>
+</ul>
+
+<h2>3. Design: who does what</h2>
+<table>
+  <tr><th style="width:24%">Component</th><th>Job in this system</th></tr>
+  <tr><td>K-means (k = 4)</td><td>Groups all 20 cities without any labels. Centre = mean for numbers, majority vote for yes/no attributes.</td></tr>
+  <tr><td>4 seed labels</td><td>Name each cluster: the seed closest to a cluster centre gives it its name.</td></tr>
+  <tr><td>KNN (k = 3)</td><td>Re-checks each city: if 2 of its 3 nearest cities agree on a different label, the label moves. Also labels new cities.</td></tr>
+  <tr><td>Euclidean distance</td><td>Compares the numeric part: growth, spend and visits (min-max normalised).</td></tr>
+  <tr><td>Hamming distance</td><td>Compares the cultural part: how many of the 8 yes/no attributes differ.</td></tr>
+  <tr><td>Tour planner</td><td>Picks the cluster that best fits the traveller, then orders the stops by nearest neighbour.</td></tr>
+</table>
+
+<h2>4. Combining Euclidean and Hamming distance</h2>
+<p>Numbers and yes/no facts cannot share one ruler, so we measure each with its own ruler and blend them:</p>
+<p style="text-align:center"><b>d(a, b) = &alpha; &middot; Euclid(numeric<sub>a</sub>, numeric<sub>b</sub>) / &radic;3 &nbsp;+&nbsp; (1 &minus; &alpha;) &middot; Hamming(bits<sub>a</sub>, bits<sub>b</sub>) / 8</b></p>
+<p>Both parts are scaled to 0&ndash;1. We use <b>&alpha; = 0.3</b>, so culture carries 70% of the weight because this is a
+<i>cultural</i> tour. Real values from the run:</p>
+<ul>
+  <li><b>d(Rome, Prague) = 0.111</b>: they differ in only 1 of 8 attributes (Hamming 1/8 = 0.125) and their numbers are close.</li>
+  <li><b>d(Rome, Dubai) = 0.804</b>: 7 of 8 attributes differ (Hamming 0.875) and Dubai's spend is far higher.</li>
+</ul>
+
+<h2>5. Step-by-step approach</h2>
+<ol>
+  <li>Normalise the numeric features and encode the 8 cultural bits for every city.</li>
+  <li>Run K-means (k = 4) on all 20 cities with the mixed distance d.</li>
+  <li>Name the clusters with the 4 seed cities, which gives every city a pseudo-label.</li>
+  <li>KNN (k = 3) re-checks every pseudo-label and moves a city when a clear majority disagrees. Repeat until nothing moves.</li>
+  <li>Use KNN to label new destinations that were never in the data.</li>
+  <li>Score each city against the traveller, pick the best cluster, add one cross-cluster stop, and route by nearest neighbour.</li>
+</ol>
+<figure class="w70"><img src="images/q14_flowchart.png" alt="flowchart"><figcaption>Figure 1. Flowchart of the semi-supervised cultural tour planner.</figcaption></figure>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> SemiSupervisedClusters(cities, seeds, k = 4, &alpha; = 0.3):
+    d(a, b) = &alpha;&middot;Euclid(num_a, num_b)/&radic;3 + (1&minus;&alpha;)&middot;Hamming(bits_a, bits_b)/8
+    clusters &larr; KMeans(cities, k, distance d)     <span class="c"># centre: mean of numbers, majority of bits</span>
+    name each cluster by the seed city closest to its centre
+    label(c) &larr; name of c's cluster, for every city    <span class="c"># pseudo-labels</span>
+    <b>repeat</b>
+        <b>for each</b> city c that is not a seed:
+            N &larr; the 3 nearest cities to c under d       <span class="c"># KNN</span>
+            <b>if</b> at least 2 cities in N share a label L &ne; label(c): label(c) &larr; L
+    <b>until</b> no label changes
+    <b>for each</b> new city x: label(x) &larr; majority label of its 3 nearest cities
+    <b>return</b> label
+
+<b>function</b> PlanTour(profile, label, budget):
+    match(c) = 1 &minus; Hamming(profile, bits_c) / 8
+    C* &larr; cluster with the highest average match
+    stops &larr; cities of C* within budget + best-matching city from another cluster
+    route &larr; start at the best match, then always go to the nearest unvisited stop
+    <b>return</b> route</pre>
+
+<h2>7. Can K-means and KNN be combined into semi-supervised learning? Yes</h2>
+<p>Here is what the real run did with only 4 labels:</p>
+<table>
+  <tr><th>Cluster (named by its seed)</th><th>K-means centre (attributes switched on)</th><th>Final members after KNN</th></tr>
+  <tr><td>Heritage &amp; Faith (Rome)</td><td>heritage, religious, art, nightlife</td><td>Barcelona, Istanbul, Rome, Vienna, Amsterdam, Prague</td></tr>
+  <tr><td>Art &amp; Lifestyle (Paris)</td><td>heritage, art, shopping, nightlife</td><td>London, Milan, Paris</td></tr>
+  <tr><td>Street Food &amp; Markets (Bangkok)</td><td>heritage, religious, street food, shopping, nightlife, skyline</td><td>Seoul, Tokyo, Bangkok, Osaka</td></tr>
+  <tr><td>Modern &amp; Shopping (Dubai)</td><td>street food, shopping, nightlife, nature, skyline</td><td>Dubai, New York, Taipei, Singapore, Kuala Lumpur, Hong Kong, Shanghai</td></tr>
+</table>
+<p>KNN moved 3 borderline cities: <b>Barcelona</b> (Art &rarr; Heritage), <b>Kuala Lumpur</b> and <b>Shanghai</b> (Street Food &rarr;
+Modern). It also labelled two cities that were never in the data: <b>Kyoto</b> (nearest: Istanbul, Rome, Vienna) and
+<b>Lisbon</b> (nearest: Amsterdam, Barcelona, Vienna). Both went to Heritage &amp; Faith. K-means gives the shape, the seeds give
+the meaning, and KNN gives the fine-tuning and the reach to new data.</p>
+<figure class="w90"><img src="images/q14_chart1_cultural_clusters.png" alt="re-coloured diagram 6"><figcaption>Figure 2. Diagram 6 redrawn from approximate readings, coloured by cultural cluster instead of region.</figcaption></figure>
+
+<h2>8. Organising a tour from a cultural perspective</h2>
+<p>For the culture lover, Heritage &amp; Faith has the best average match. The real run gives:</p>
+<ul>
+  <li>Match scores: Istanbul 0.88, Rome 0.88, Vienna 0.75, Prague 0.75, Barcelona 0.75, Amsterdam 0.75, Milan 0.62.</li>
+  <li>The cross-cluster stop is <b>Milan</b> (Art &amp; Lifestyle), the best in-budget match outside the main cluster.</li>
+  <li>The tour has <b>7 stops and covers 4,752 km</b>: Istanbul &rarr; Vienna &rarr; Prague &rarr; Milan &rarr; Rome &rarr; Barcelona &rarr; Amsterdam.</li>
+</ul>
+<p>Nearest-neighbour routing is greedy. The jump from Rome to Barcelona and then up to Amsterdam shows it is quick, not perfect.
+A 2-opt swap or the traveller's own edits can polish the order.</p>
+<figure class="w70"><img src="images/q14_chart3_tour_route.png" alt="tour route"><figcaption>Figure 3. The planned route. Faded points are cities outside the tour.</figcaption></figure>
+
+<h2>9. Introducing systemic creativity</h2>
+<p>Systemic creativity means looking at the whole tourism system, not one city at a time. The links between parts are
+where new tour ideas come from:</p>
+<ul>
+  <li><b>Bridge cities.</b> The code measures how close each city is to its two nearest cluster centres. Ratios near 1 mean
+  "sits between two cultures": <b>Barcelona (0.97), Osaka (0.82), Amsterdam (0.70)</b>. These are natural hinges for
+  cross-cluster tours. Istanbul plays the same role geographically, joining Europe and Asia.</li>
+  <li><b>Deliberate cross-cluster stops.</b> Adding Milan to a heritage tour mixes art into faith. A small "negative" can lift
+  the whole (Positive + Positive &lt; Negative + Positive).</li>
+  <li><b>IoT and live data.</b> Footfall sensors, queue cameras and weather feeds can re-order stops to avoid crowds. Festival
+  calendars add temporary attributes, so the clusters can be re-run each season.</li>
+  <li><b>Other domains.</b> Food, rail links, local events and hotel prices become extra dimensions. In practice, adding a
+  data source expands the conceptual space of possible tours.</li>
+</ul>
+
+<h2>10. Diagram 6 modified to a cultural-preference distribution</h2>
+<p>The original chart places cities by <i>growth vs spend</i> and colours them by <i>continent</i>. Our version keeps
+spend on the y-axis and bubble size = visits. The x-axis becomes <b>cultural match with the traveller</b>, and the colour
+becomes the <b>cultural cluster</b>. The dashed lines (match 0.66, budget $1,200) mark a "sweet spot". The tour cities
+(black rings) sit at the bottom right, and Milan sits just outside as the planned cross-cluster stop.</p>
+<figure><img src="images/q14_chart2_preference_distribution.png" alt="preference distribution"><figcaption>Figure 4. Diagram 6 modified: cities placed by cultural preference instead of growth.</figcaption></figure>
+
+<h2>11. Code and real run</h2>
+<p><code>q14_code.py</code> does the mixed-distance K-means, seed naming, KNN refinement, new-city labelling, bridge detection
+and tour planning, and draws every chart above.</p>
+<figure class="shot"><img src="images/q14_ide_run.png" alt="IDE screenshot"><figcaption>Figure 5. Cluster naming and the KNN refinement loop (lines 85-112), with the real terminal output.</figcaption></figure>
+
+<h2>12. Summary</h2>
+<div class="key">Yes, K-means and KNN combine naturally: K-means finds the cultural groups, 4 seeds name them, and KNN
+repairs borderline labels and classifies new places. A blended Euclidean + Hamming distance lets numbers and cultural
+yes/no facts work together. The result drives a cultural tour, and bridge cities plus live IoT data add the systemic,
+creative layer.</div>
+
+<p class="files">Files in this folder: <code>q14_code.py</code> (source), <code>q14_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q14_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

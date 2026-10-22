@@ -1,0 +1,20 @@
+Q6  Creative product agent: GA + semi-supervised learning (smart water bottle)
+  today's bottle: 500 ml, plastic, no sensor, no display, no app, coin cell, classic, budget
+  share of ideas that really succeed: 40%
+  supervised only (40 labels): test accuracy 0.73
+  round | labelled | pseudo-labelled | test accuracy  (self-training, 400 unlabelled)
+      0 |       40 |             305 | 0.72
+GA AGENTS (20 ideas per agent, 30 generations, average of 10 seeds)
+  designer         | mean best value 1.049 | really succeed 90%
+  usability critic | mean best value 1.121 | really succeed 40%
+  cost agent       | mean best value 1.060 | really succeed 0%
+  co-operative     | mean best value 1.117 | really succeed 70%
+TOP 3 MODIFICATIONS (choices, not answers) + simulated market test
+  1. 1 L, plastic, intake tracker, LED ring, reminder app, coin cell, modular cap, premium
+     value 1.110 | predicted P 1.00 | market test: success
+  2. 1 L, plastic, temp sensor, LED ring, reminder app, coin cell, modular cap, premium
+     value 1.081 | predicted P 1.00 | market test: success
+  3. 750 ml, plastic, no sensor, no display, reminder app, coin cell, modular cap, mid
+     value 1.067 | predicted P 1.00 | market test: flop
+  feedback: 3 launch results added as true labels -> accuracy 0.76
+charts saved to images/

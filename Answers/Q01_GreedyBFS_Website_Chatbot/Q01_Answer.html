@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q1 - Greedy Best-First Search for Website and Chatbot Design</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q1. Greedy Best-First Search for Website Design (and Chatbot Design)</h1>
+</header>
+
+<div class="question"><b>Question.</b> Use greedy best-first search (GBFS) for website design. What is the heuristic?
+Map node expansion and traversal to design changes. Discuss convergent and divergent approaches. Extend the idea to
+chatbot design with multiple trees. Can each member of a population be a decision tree (Diagram 1)? Can the heuristic
+be dynamic? Give a step-by-step approach, pseudocode and one worked example.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>A website can be improved one change at a time: a new layout, simpler navigation, faster images. Each version of the
+site is a <b>state</b>. GBFS looks at all versions it can reach with one more change and always jumps to the one that
+<i>looks</i> closest to a great site. "Looks closest" is the job of the <b>heuristic h(n)</b>. GBFS does not care how many
+changes it already made (it ignores path cost). It only asks: <i>which version seems nearest to the goal right now?</i></p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>A site design has 5 features: layout, navigation, hero section, call-to-action (CTA) and images, each with 3 options.</li>
+  <li>The UX team rates every option for <b>usability, speed and mobile-friendliness</b> (0 to 10), for example from past A/B tests.</li>
+  <li>The starting site is old-fashioned: classic layout, mega-menu, slider, no CTA, heavy images.</li>
+  <li>The goal is a UX score of at least 80/100, which means <b>h(n) &le; 20</b>.</li>
+</ul>
+
+<h2>3. Mapping search to website design</h2>
+<table>
+  <tr><th style="width:26%">Search term</th><th>Meaning in website design</th></tr>
+  <tr><td>State / node</td><td>One complete version of the website (a choice for each of the 5 features)</td></tr>
+  <tr><td>Start state S0</td><td>The current live website</td></tr>
+  <tr><td>Action (operator)</td><td>One design change, e.g. <code>images &rarr; lazy-loaded</code></td></tr>
+  <tr><td>Node expansion</td><td>Listing every version reachable with <b>one</b> change (10 children per node here)</td></tr>
+  <tr><td>Traversal</td><td>The sequence of accepted changes, i.e. the redesign roadmap</td></tr>
+  <tr><td>Heuristic h(n)</td><td>Estimated gap between this version and an ideal site (lower is better)</td></tr>
+  <tr><td>Goal test</td><td>h(n) &le; 20 (UX score &ge; 80)</td></tr>
+</table>
+
+<h3>The heuristic</h3>
+<p>UX(n) = 100 &times; &Sigma;<sub>features</sub> (w<sub>u</sub>&middot;usability + w<sub>s</sub>&middot;speed + w<sub>m</sub>&middot;mobile) / (10 &times; 5)
+&nbsp;&nbsp;and&nbsp;&nbsp; <b>h(n) = 100 &minus; UX(n)</b>.</p>
+<p>In week 1 the weights are w = (0.50, 0.30, 0.20). The option ratings (usability, speed, mobile) are:</p>
+<table>
+  <tr><th>Feature</th><th>Option 1</th><th>Option 2</th><th>Option 3</th></tr>
+  <tr><td>Layout</td><td>classic (5,6,4)</td><td>grid (7,6,6)</td><td>single-page (8,7,9)</td></tr>
+  <tr><td>Navigation</td><td>mega-menu (6,4,2)</td><td>simple (8,8,7)</td><td>hamburger (6,8,10)</td></tr>
+  <tr><td>Hero</td><td>slider (4,3,4)</td><td>static-image (7,8,7)</td><td>short-video (8,4,6)</td></tr>
+  <tr><td>CTA</td><td>none (2,10,5)</td><td>one-button (8,10,8)</td><td>sticky (9,9,9)</td></tr>
+  <tr><td>Images</td><td>heavy (6,1,2)</td><td>compressed (6,8,7)</td><td>lazy-loaded (7,10,9)</td></tr>
+</table>
+
+<h2>4. Step-by-step approach</h2>
+<ol>
+  <li>Describe the live site as the start state S0 and compute h(S0).</li>
+  <li>Put S0 in the OPEN list, which is sorted by h (lowest first).</li>
+  <li>Take the version with the lowest h out of OPEN. If h &le; 20, stop: this is the design to ship.</li>
+  <li>Otherwise <b>expand</b> it: make every one-change variant and compute h for each.</li>
+  <li>Add the unseen variants to OPEN and remember the visited ones, so we never redo a design.</li>
+  <li>Repeat from step 3. Optionally, update the heuristic weights whenever new analytics arrive.</li>
+</ol>
+
+<figure class="w70"><img src="images/q01_flowchart.png" alt="GBFS flowchart"><figcaption>Figure 1. Flowchart of GBFS for website design.</figcaption></figure>
+
+<h2>5. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> GBFS_WebsiteDesign(S0, h, goal_h):
+    OPEN &larr; priority queue ordered by h(n)          <span class="c"># lowest h comes out first</span>
+    OPEN.push(S0);  VISITED &larr; { }
+    <b>while</b> OPEN is not empty:
+        n &larr; OPEN.pop_lowest()
+        <b>if</b> n in VISITED: <b>continue</b>
+        VISITED.add(n)
+        <b>if</b> h(n) &le; goal_h: <b>return</b> n and its list of changes   <span class="c"># goal test</span>
+        <b>for each</b> single design change c <b>in</b> (layout, nav, hero, CTA, images):
+            child &larr; apply(c, n)                           <span class="c"># node expansion</span>
+            <b>if</b> child not in VISITED: OPEN.push(child, h(child))
+        <span class="c"># optional: re-weight h from fresh analytics (dynamic heuristic)</span>
+    <b>return</b> "no design reaches the goal"</pre>
+
+<h2>6. Worked example</h2>
+<p>Start: classic, mega-menu, slider, no CTA, heavy images, so <b>h(S0) = 55.8</b>. Take the first expansion as an example.
+Switching heavy images (6,1,2) to lazy-loaded (7,10,9) adds 0.5&times;1 + 0.3&times;9 + 0.2&times;7 = 4.6 raw points. That is
++9.2 UX points, so h falls to <b>46.6</b>. It is the biggest single drop, so GBFS picks it first.</p>
+<table>
+  <tr><th class="num">Step</th><th>Design change chosen by GBFS</th><th class="num">h(n)</th><th>Why it was picked</th></tr>
+  <tr><td class="num">0</td><td>start design</td><td class="num">55.8</td><td>old site</td></tr>
+  <tr><td class="num">1</td><td>images &rarr; lazy-loaded</td><td class="num">46.6</td><td>biggest drop: speed jumps from 1 to 10</td></tr>
+  <tr><td class="num">2</td><td>CTA &rarr; sticky</td><td class="num">38.6</td><td>best child in the new frontier</td></tr>
+  <tr><td class="num">3</td><td>hero &rarr; static-image</td><td class="num">31.4</td><td>slider was slow and weak</td></tr>
+  <tr><td class="num">4</td><td>nav &rarr; simple</td><td class="num">25.0</td><td>usability carries 50% weight</td></tr>
+  <tr class="hl"><td class="num">5</td><td>layout &rarr; single-page</td><td class="num">19.4</td><td>h &le; 20, so the goal is reached</td></tr>
+</table>
+<p>GBFS expanded only 5 nodes to reach the goal, out of 3<sup>5</sup> = 243 possible designs.</p>
+<figure><img src="images/q01_chart1_search_tree.png" alt="GBFS search tree"><figcaption>Figure 2. The real search tree from the code. Each row is one expansion (one design change). Blue nodes are alternatives left in OPEN.</figcaption></figure>
+
+<h2>7. Convergent vs divergent approaches</h2>
+<table>
+  <tr><th style="width:18%"></th><th>Convergent (plain GBFS)</th><th>Divergent (creative extension)</th></tr>
+  <tr><td>What it does</td><td>Always follows the single lowest-h version and narrows to one design</td><td>Keeps several promising versions alive and tries unusual changes</td></tr>
+  <tr><td>How</td><td>Pop the best node and stop at the goal</td><td>Keep the top-k (beam), add random or novel changes, start from several sites</td></tr>
+  <tr><td>Strength</td><td>Fast, cheap, clear roadmap</td><td>Finds designs that GBFS never looks at; gives the designer <i>choices, not answers</i></td></tr>
+  <tr><td>Risk</td><td>Fixation: a misleading h leads to a so-so design</td><td>Slower, so it needs a creativity check (novelty + usefulness)</td></tr>
+</table>
+<p>In Figure 2 the blue nodes are the divergent pool and the orange path is the convergent choice. A good design process
+first diverges (many alternatives), then converges (pick, test, ship).</p>
+
+<h2>8. Can the heuristic be dynamic? Yes</h2>
+<p>User behaviour changes, so the heuristic should change too. Suppose analytics show mobile traffic doubled by week 4.
+We move weight to mobile: w = (0.35, 0.25, 0.40). Running the same GBFS again gives a <b>different order and a
+different final design</b>: navigation becomes <b>hamburger</b> instead of simple, and it is chosen 2nd instead of 4th.
+In general h<sub>t</sub>(n) = &Sigma; w<sub>i</sub>(t)&middot;f<sub>i</sub>(n), where the weights w<sub>i</sub>(t) are updated from A/B tests, user feedback or a learning agent.</p>
+<figure class="w70"><img src="images/q01_chart2_dynamic_heuristic.png" alt="static vs dynamic heuristic"><figcaption>Figure 3. h(n) along the path for both heuristics. The labels show the week-4 order of changes.</figcaption></figure>
+
+<h2>9. Extending to chatbot design with multiple trees</h2>
+<p>A chatbot is a set of conversation trees, for example a <b>greeting tree, an orders tree and a refunds tree</b>. Each
+node is a conversation state, and each child is the next question or reply. GBFS works the same way, with these changes:</p>
+<ul>
+  <li><b>State:</b> where the conversation is right now. <b>Expansion:</b> the possible next bot turns.</li>
+  <li><b>h(n):</b> the expected number of turns left before the user's problem is solved, or 1 &minus; P(resolved).</li>
+  <li><b>Multiple trees:</b> keep <b>one shared OPEN list</b> for all trees. GBFS then picks the most promising branch
+  from whichever tree fits best, so it can even jump from the orders tree to the refunds tree.</li>
+</ul>
+
+<h3>Can every member of a population be a decision tree (Diagram 1)? Yes</h3>
+<p>Diagram 1 is a tree: a root question, then branches, then more branches, then leaves. That is exactly a chatbot
+decision tree. <b>Internal nodes</b> are tests on the user's message ("mentions refund?", "sounds angry?"), and
+<b>leaves</b> are replies (refund flow, track order, hand over to a human). A genetic algorithm can evolve a whole
+population of these trees:</p>
+<ul>
+  <li><b>Crossover</b> = swap a sub-tree between two parent trees.</li>
+  <li><b>Mutation</b> = replace a branch, or change a question or reply.</li>
+  <li><b>Fitness</b> = accuracy on sample chats minus a small penalty for big trees.</li>
+</ul>
+<pre class="pseudo">population &larr; 40 random decision trees (depth &le; 3)
+<b>repeat</b> for G generations:
+    fitness(tree) = accuracy on sample chats &minus; 0.003 &times; tree size
+    keep the 2 best trees (elitism)
+    <b>while</b> the new population is not full:
+        p1, p2 &larr; tournament_selection(population)
+        child &larr; subtree_swap(p1, p2)                     <span class="c"># crossover</span>
+        <b>with</b> probability 0.3: child &larr; replace_random_branch(child)   <span class="c"># mutation</span>
+<b>return</b> best tree</pre>
+<p>In our run, accuracy went from <b>51% to 93%</b> in 60 generations. The best tree (Figure 4) learned rules such as
+"refund and angry &rarr; human agent" and "order &rarr; track order". One leftover quirk is visible: it asks "refund?"
+twice. Evolution keeps whatever works, so a cleanup step can simplify the tree afterwards.</p>
+<figure><img src="images/q01_chart3_chatbot_ga.png" alt="chatbot GA"><figcaption>Figure 4. Left: fitness over generations. Right: the best population member, a single decision tree in the shape of Diagram 1.</figcaption></figure>
+
+<h2>10. Code and real run</h2>
+<p>The full program (<code>q01_code.py</code>) runs GBFS with both heuristics and the chatbot GA, and draws every chart in this answer.</p>
+<figure class="shot"><img src="images/q01_ide_run.png" alt="IDE screenshot"><figcaption>Figure 5. The core GBFS function (lines 46-65) and the real terminal output of the full run.</figcaption></figure>
+
+<h2>11. Summary</h2>
+<div class="key">GBFS turns website redesign into a guided search: one node = one site version, one expansion = one design
+change, and h(n) = distance from an ideal UX score. It is fast but greedy, so it can settle on a "good enough" design.
+Making h dynamic keeps it in step with real users. Moving to a forest of chatbot trees, evolved as a population, adds
+the divergent, creative side.</div>
+
+<p class="files">Files in this folder: <code>q01_code.py</code> (source), <code>q01_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q01_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

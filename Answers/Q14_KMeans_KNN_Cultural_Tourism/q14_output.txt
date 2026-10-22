@@ -1,0 +1,23 @@
+STEP 1-2  K-means (k=4, alpha=0.3) on 20 unlabelled cities, named by 4 seeds
+  seeds (4 of 20, one per category): Rome, Paris, Bangkok, Dubai
+  mixed distance: d(Rome, Prague) = 0.111, d(Rome, Dubai) = 0.804
+  Art & Lifestyle       centre: heritage, art, shopping, nightlife
+  Street Food & Markets centre: heritage, religious, street food, shopping, nightlife, skyline
+  Heritage & Faith      centre: heritage, religious, art, nightlife
+  Modern & Shopping     centre: street food, shopping, nightlife, nature, skyline
+STEP 3  KNN (k=3, mixed distance) re-checks the pseudo-labels
+  moved Barcelona: Art & Lifestyle -> Heritage & Faith
+  moved Kuala Lumpur: Street Food & Markets -> Modern & Shopping
+  moved Shanghai: Street Food & Markets -> Modern & Shopping
+STEP 4  Final cultural clusters
+  Heritage & Faith     : Barcelona, Istanbul, Rome, Vienna, Amsterdam, Prague
+  Art & Lifestyle      : London, Milan, Paris
+  Street Food & Markets: Seoul, Tokyo, Bangkok, Osaka
+  Modern & Shopping    : Dubai, New York, Taipei, Singapore, Kuala Lumpur, Hong Kong, Shanghai
+STEP 5  new city Kyoto   -> Heritage & Faith  (3 nearest: Istanbul, Rome, Vienna)
+STEP 5  new city Lisbon  -> Heritage & Faith  (3 nearest: Amsterdam, Barcelona, Vienna)
+Bridge cities (closest to two clusters): Barcelona (0.97), Osaka (0.82), Amsterdam (0.70)
+STEP 6  traveller 'culture lover' -> cluster Heritage & Faith, cross-cluster stop Milan
+  match: Istanbul 0.88, Vienna 0.75, Prague 0.75, Milan 0.62, Rome 0.88, Barcelona 0.75, Amsterdam 0.75
+  tour (7 stops, 4,752 km): Istanbul -> Vienna -> Prague -> Milan -> Rome -> Barcelona -> Amsterdam
+charts saved to images/

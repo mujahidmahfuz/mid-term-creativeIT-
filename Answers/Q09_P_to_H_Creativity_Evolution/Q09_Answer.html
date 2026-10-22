@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q9 - P-creativity to H-creativity with an Evolutionary Algorithm</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q9. Psychological Creativity through Evolutionary Algorithms, and the Step to Historical Creativity</h1>
+</header>
+
+<div class="question"><b>Question.</b> Discuss different possibilities where psychological (P) creativity is achieved
+through an evolutionary algorithm. Can it be extended to historical (H) creativity? What could the challenges be? Think
+of a few ideas to resolve them. How can we expand the conceptual space in this case?</div>
+
+<h2>1. The idea in plain words</h2>
+<p>An evolutionary algorithm (EA) keeps making new designs by mixing and mutating old ones. Almost everything it makes
+is <b>new to itself</b>. That is P-creativity (Boden): new to the individual or agent. H-creativity is much harder:
+the idea must be <b>new to all of history</b> and still useful. The EA cannot see history unless we show it. So the
+honest answer is: yes, it can be extended, but only if we (1) give the EA a memory of what the world has already made and
+(2) let it step out of the old conceptual space.</p>
+
+<h2>2. How we measure the two kinds of creativity</h2>
+<table>
+  <tr><th style="width:22%">Kind</th><th>Test used in this answer</th></tr>
+  <tr><td>P-creative</td><td>Distance to the nearest design in the agent's <b>own archive</b> &gt; 0.12, so the agent has never made anything like it</td></tr>
+  <tr><td>H-creative</td><td>Distance to the nearest of <b>300 historical designs</b> &gt; 0.40 <b>and</b> usefulness &gt; 0.70. It is new to the world <i>and</i> valuable</td></tr>
+</table>
+<p>Every H-creative design is also P-creative, but not the other way round. In other words, P-creativity is H-creativity
+judged against a much smaller archive.</p>
+
+<h2>3. Possibilities where P-creativity comes from evolution</h2>
+<table>
+  <tr><th style="width:24%">Area</th><th>What evolves</th><th>Why it is P-creative</th></tr>
+  <tr><td>Vehicle / product design</td><td>Body and wheel genes (the car GA from the lectures)</td><td>Crossover gives body/wheel mixes the agent never drew before</td></tr>
+  <tr><td>Poetry</td><td>Word sequences (POEVOLVE, McGonnagall)</td><td>New lines that fit rhyme and metre</td></tr>
+  <tr><td>Music</td><td>Jazz riffs (Al Biles' GenJam)</td><td>Each solo differs from the bot's earlier ones</td></tr>
+  <tr><td>Chatbots and rules</td><td>Decision trees (see Q1)</td><td>New dialogue strategies for the bot</td></tr>
+  <tr><td>Neural networks</td><td>Connection matrices, learning rules (Chalmers 1990)</td><td>New architectures for that system</td></tr>
+  <tr><td>Art and patterns</td><td>Drawing programs (see Q8)</td><td>New shapes from combined actions</td></tr>
+</table>
+
+<h2>4. Assumptions for the experiment</h2>
+<ul>
+  <li>A design is a small vehicle with 6 genes in [0, 1]: length, height, wheel size, wheel gap, roof slope and colour.</li>
+  <li><b>Usefulness</b> checks simple engineering rules: wheels near the ends, wheels sized to the body, roof not too steep.</li>
+  <li><b>History</b> = 300 known designs around 5 prototypes (sedan, SUV, truck, bus, sports car).</li>
+  <li>EA: 40 designs per generation, 40 generations, tournament selection, blend crossover, Gaussian mutation, 2 elites.</li>
+  <li>Three runs, all with the same seed:
+    <ul>
+      <li><b>P-only</b>: fitness = usefulness + novelty against the agent's own archive.</li>
+      <li><b>global</b>: from generation 21, fitness also rewards distance to history (a global archive).</li>
+      <li><b>global+expand</b>: as "global", plus a 7th gene from generation 21, a "smart IoT skin" (sensor coverage) that no
+      historical design has.</li>
+    </ul></li>
+</ul>
+
+<h2>5. Step-by-step approach</h2>
+<ol>
+  <li>Load the history archive H and start with an empty own archive P.</li>
+  <li>Create a random population and score each design: fitness = usefulness + novelty.</li>
+  <li>Label each design: P-creative if far from P (then store it in P), H-creative if also far from H and useful.</li>
+  <li>If the H-creative rate stays low, apply the fixes: reward distance to H, and expand the conceptual space with a new gene.</li>
+  <li>Select, cross over and mutate to make the next generation. Repeat until the last generation.</li>
+</ol>
+<figure class="w70"><img src="images/q09_flowchart.png" alt="Q9 flowchart"><figcaption>Figure 1. Flowchart of the EA with P- and H-creativity checks.</figcaption></figure>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> CreativeEA(history H, generations G, switch S):
+    P &larr; { };  population &larr; random designs
+    <b>for</b> g = 1 to G:
+        <b>if</b> g = S + 1: add a new gene to every design             <span class="c"># expand the conceptual space</span>
+        <b>for each</b> design x <b>in</b> population:
+            <b>if</b> dist(x, P) &gt; &tau;<sub>P</sub>:
+                P.add(x)                                         <span class="c"># P-creative</span>
+                <b>if</b> dist(x, H) &gt; &tau;<sub>H</sub> <b>and</b> useful(x) &gt; 0.7: mark x H-creative
+        fitness &larr; useful(x) + 0.5&middot;novelty(x, P)
+        <b>if</b> g &gt; S: fitness &larr; useful(x) + 0.3&middot;novelty(x, P) + 0.6&middot;novelty(x, H)   <span class="c"># global archive</span>
+        population &larr; elites + mutate(blend_crossover(tournament(population)))
+    <b>return</b> P-creative and H-creative designs</pre>
+
+<h2>7. Worked example (real run)</h2>
+<p>Results of the "global+expand" run, in blocks of 5 generations:</p>
+<table>
+  <tr><th>Generations</th><th class="num">P-creative</th><th class="num">H-creative</th><th class="num">H share</th><th>What is happening</th></tr>
+  <tr><td>1&ndash;5</td><td class="num">130</td><td class="num">11</td><td class="num">8.5%</td><td>Everything is new to a "newborn" agent</td></tr>
+  <tr><td>6&ndash;10</td><td class="num">46</td><td class="num">3</td><td class="num">6.5%</td><td>Own archive fills up</td></tr>
+  <tr><td>11&ndash;15</td><td class="num">21</td><td class="num">0</td><td class="num">0.0%</td><td>Useful designs drift back toward history</td></tr>
+  <tr><td>16&ndash;20</td><td class="num">15</td><td class="num">1</td><td class="num">6.7%</td><td>Stuck: P-creative but not H-creative</td></tr>
+  <tr><td>21&ndash;25</td><td class="num">60</td><td class="num">12</td><td class="num">20.0%</td><td>Fixes switched on</td></tr>
+  <tr><td>26&ndash;30</td><td class="num">60</td><td class="num">26</td><td class="num">43.3%</td><td>The new gene is being explored</td></tr>
+  <tr class="hl"><td>31&ndash;35</td><td class="num">47</td><td class="num">37</td><td class="num">78.7%</td><td>Most new designs are now new to history</td></tr>
+  <tr><td>36&ndash;40</td><td class="num">42</td><td class="num">30</td><td class="num">71.4%</td><td>Stable</td></tr>
+</table>
+<p>Totals after 40 generations for the three runs:</p>
+<table>
+  <tr><th>Run</th><th class="num">P-creative</th><th class="num">H-creative</th><th class="num">H share</th></tr>
+  <tr><td>P-only (plain EA)</td><td class="num">276</td><td class="num">18</td><td class="num">6.5%</td></tr>
+  <tr><td>+ global archive</td><td class="num">294</td><td class="num">33</td><td class="num">11.2%</td></tr>
+  <tr class="hl"><td>+ global archive + new gene</td><td class="num">421</td><td class="num">120</td><td class="num">28.5%</td></tr>
+</table>
+<figure><img src="images/q09_chart1_p_vs_h.png" alt="P vs H per generation"><figcaption>Figure 2. Left: P-creative (blue) vs H-creative (orange) designs per generation. Right: cumulative H-creative designs for the three runs.</figcaption></figure>
+
+<h2>8. Can it be extended to historical creativity?</h2>
+<p><b>Yes, but not for free.</b> The plain EA made 276 P-creative designs, yet only 18 (6.5%) were new to history and
+useful. The reason is simple: the useful region of the old space is already crowded with sedans, SUVs and trucks, so
+evolution keeps "rediscovering" them. Once the EA could see history (global archive) and had a new dimension to
+explore, it produced <b>120 H-creative designs, 6.7 times more</b>. Most of them sit where no known vehicle sits: short
+but tall bodies (Figure 3, right).</p>
+<figure><img src="images/q09_chart2_creativity_map.png" alt="creativity map"><figcaption>Figure 3. Left: novelty vs usefulness; the shaded corner is the H-creative zone. Right: new designs vs the 300 historical designs (grey).</figcaption></figure>
+
+<h2>9. Challenges</h2>
+<ul>
+  <li><b>Knowing history.</b> No archive holds every design ever made, so an "H-creative" label is only as good as the archive.</li>
+  <li><b>Judging value.</b> Usefulness for brand-new ideas is uncertain. History often decides value later (a social judgement).</li>
+  <li><b>Novelty vs usefulness.</b> Random designs are novel but useless (the grey points at usefulness 0 in Figure 3).</li>
+  <li><b>Pull back to the known.</b> Fitness rules are written by people, so they favour what already exists (generations 11&ndash;20).</li>
+  <li><b>Premature convergence</b> and homogenisation. AI can raise individual creativity yet reduce collective diversity.</li>
+  <li><b>Cost.</b> Comparing every design with a large history archive and validating with experts is slow.</li>
+</ul>
+
+<h2>10. Ideas to resolve them</h2>
+<table>
+  <tr><th style="width:30%">Idea</th><th>How it helps</th></tr>
+  <tr><td>Global archive + novelty search</td><td>Reward distance to <i>history</i>, not just to the agent's memory (+15 H-creative in our run)</td></tr>
+  <tr><td>Multi-objective fitness</td><td>Keep novelty, usefulness and surprise as separate goals (a Pareto front) so neither hides the other</td></tr>
+  <tr><td>Island models</td><td>Several sub-populations evolve apart and swap genes now and then, which keeps diversity</td></tr>
+  <tr><td>Human-in-the-loop (creativity test)</td><td>Experts rate candidates in the H-creative zone. The machine proposes; people judge value</td></tr>
+  <tr><td>Embedding search over patents/papers</td><td>A practical way to build a big history archive</td></tr>
+  <tr><td>Transformational operators</td><td>Change the representation itself, not only gene values (next section)</td></tr>
+</table>
+
+<h2>11. How can we expand the conceptual space?</h2>
+<ul>
+  <li><b>Add a new dimension (gene).</b> In our run, a "smart IoT skin" gene appeared at generation 21. No historical vehicle has it,
+  so useful designs that use it are new to history. The H share jumped from about 7% to <b>79%</b>. This is the course idea:
+  <i>adding a sensor modality changes the space, not merely the data</i>.</li>
+  <li><b>Release boundaries of compatibility.</b> Relax rules such as "exactly two axles", like the pink-elephant overrule.</li>
+  <li><b>Change the rules R and traversal T</b> (Wiggins). Allow new operators such as nesting or analogy from other domains.</li>
+  <li><b>Combine spaces from other domains</b> (systemic view): vehicle + drone, or vehicle + furniture.</li>
+  <li><b>Generalise properties</b> as in the "GENERATE" slide. "Some shape on two circles" invites a pentagon on wheels.</li>
+</ul>
+
+<h2>12. Code and real run</h2>
+<p><code>q09_code.py</code> runs all three EAs, counts P- and H-creative designs and draws the figures.</p>
+<figure class="shot"><img src="images/q09_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The <code>evolve()</code> function and the real terminal output.</figcaption></figure>
+
+<h2>13. Summary</h2>
+<div class="key">Evolution gives P-creativity easily: 276 designs new to the agent. H-creativity needs more, because
+only 6.5% of those were new to history and useful. Giving the EA a global archive and expanding its conceptual space
+with a new dimension raised that to 120 H-creative designs. Final value judgement should still involve people.</div>
+
+<p class="files">Files in this folder: <code>q09_code.py</code> (source), <code>q09_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q09_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

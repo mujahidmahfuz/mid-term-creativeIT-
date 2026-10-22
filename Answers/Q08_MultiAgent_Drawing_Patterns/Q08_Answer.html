@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q8 - Multi-Agent Creative Drawing by Combining Two Patterns</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q8. Search Space and a Multi-Agent System that Combines Two Drawing Patterns</h1>
+</header>
+
+<div class="question"><b>Question.</b> What is a search space? Design a multi-agent system that combines two drawing
+patterns into a new creative drawing, by expanding the search space or adding a new action. How can we combine two
+actions? Both agents introduce new combinations to create new states. What could the fitness function be?</div>
+
+<h2>1. The idea in plain words</h2>
+<p>Think of two artists. One only draws square spirals; the other only draws stars. Each artist knows a few moves:
+go forward, turn, make the next step longer. Neither can draw anything new with their own moves alone. The trick is to
+<b>glue one move from each artist into a brand-new move</b>, for example "turn like the star <i>and</i> grow like the
+spiral" in a single step. That new move opens up drawings neither artist could reach before. Two agents keep
+proposing such combinations, a fitness function scores them, and a shared archive remembers what is already done.</p>
+
+<h2>2. What is a search space?</h2>
+<p>The <b>search space</b> is the set of all states an agent can reach from the start state by applying its actions
+(operators), again and again. It is an implicit graph: states are nodes and actions are edges. We never build it
+fully; the search algorithm explores a small part of it. Two things decide its size:</p>
+<ul>
+  <li><b>The action set.</b> More actions means more edges out of every state.</li>
+  <li><b>The depth.</b> With <i>a</i> actions and sequences of length <i>L</i>, there are <i>a<sup>L</sup></i> possible sequences.</li>
+</ul>
+<p>Here a state is a <b>drawing program</b> (a motif of actions repeated n times). Adding new actions therefore expands
+the search space directly. That is the creative lever in this question.</p>
+
+<h2>3. Assumptions</h2>
+<ul>
+  <li>Drawings are made by a "turtle" pen. The basic actions are <code>F</code> (forward), <code>L(&theta;)</code> (turn left),
+  <code>G(g)</code> (make the step longer) and <code>C</code> (change colour).</li>
+  <li><b>Agent A</b> owns the square spiral: repeat [F, L(90&deg;), G(3)] 40 times.</li>
+  <li><b>Agent B</b> owns the five-point star: repeat [F, L(144&deg;)] 5 times.</li>
+  <li>The agents work in rounds (6 rounds, 5 proposals each per round) and share one archive of "already seen" drawings.</li>
+</ul>
+
+<h2>4. Design of the multi-agent system</h2>
+<table>
+  <tr><th style="width:24%">Part</th><th>In this design</th></tr>
+  <tr><td>Agents</td><td>A-spiral (likes compose, blend, nest) and B-star (likes compose, interleave, nest)</td></tr>
+  <tr><td>State</td><td>A drawing program: one motif of actions repeated n times (n = 20&ndash;70)</td></tr>
+  <tr><td>Basic actions</td><td>F, L, G, C &nbsp;(4 actions)</td></tr>
+  <tr><td>New actions</td><td><code>LG</code> = turn + grow in one move, <code>STAR</code> = whole star as one move,
+      <code>BLEND</code> = mixed turn angle &nbsp;(now 7 actions)</td></tr>
+  <tr><td>Agent behaviour</td><td>60% of the time an agent tweaks its own best idea (exploit); otherwise it tries a fresh
+      combination (explore)</td></tr>
+  <tr><td>Shared archive</td><td>Stores every drawing that is clearly new (overlap with all archived drawings below 60%)</td></tr>
+  <tr><td>Goal</td><td>Highest fitness after 6 rounds, plus a set of diverse new drawings in the archive</td></tr>
+</table>
+
+<h2>5. How can we combine two actions?</h2>
+<table>
+  <tr><th style="width:17%">Way</th><th>What it means</th><th>Example from our run</th></tr>
+  <tr><td><b>Compose</b></td><td>Run one action right after the other and treat the pair as one new action: a&#8322;&#8728;a&#8321;</td>
+      <td>LG = L(144&deg;) from the star + G(3) from the spiral. The result is a growing star-spiral.</td></tr>
+  <tr><td><b>Blend</b></td><td>Mix the parameters of two similar actions</td>
+      <td>BLEND turn = &alpha;&middot;90&deg; + (1&minus;&alpha;)&middot;144&deg;. With &alpha; = 0.5 that is 117&deg;.</td></tr>
+  <tr><td><b>Nest</b></td><td>Pack one whole pattern into a single action and use it inside the other</td>
+      <td>STAR is drawn at every corner of the spiral (two levels of scale).</td></tr>
+  <tr><td><b>Interleave</b></td><td>Alternate the two parents' moves</td>
+      <td>One spiral move, then one star move, and so on.</td></tr>
+</table>
+<p>Every way creates a <b>new action</b>. The action space grows from 4 to 7. For a motif of 6 actions the search space
+grows from 4<sup>6</sup> = 4,096 to 7<sup>6</sup> = 117,649 programs: <b>28.7 times larger</b> (Figure 3, right). This is
+exactly how adding an action expands the search space.</p>
+
+<h2>6. Step-by-step approach</h2>
+<ol>
+  <li>Give each agent its parent pattern and the four basic actions.</li>
+  <li>In each round, every agent picks one action from each parent and combines them (compose, blend, nest or interleave).</li>
+  <li>Repeat the new action n times to get a drawing, which is a new state.</li>
+  <li>Score it with the fitness function.</li>
+  <li>If it is clearly different from everything in the shared archive, add it. Both agents now avoid it.</li>
+  <li>Each agent keeps its best drawing and, next round, either tweaks it or tries a fresh combination.</li>
+  <li>After the last round, show the best drawings as <i>choices</i> to the human designer.</li>
+</ol>
+
+<figure class="w70"><img src="images/q08_flowchart.png" alt="Q8 flowchart"><figcaption>Figure 1. Flowchart of the multi-agent drawing system.</figcaption></figure>
+
+<h2>7. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> MultiAgentDrawing(parentA, parentB, rounds, k):
+    archive &larr; { };  best[agent] &larr; none for both agents
+    <b>for</b> r = 1 to rounds:
+        <b>for each</b> agent <b>in</b> {A-spiral, B-star}:
+            <b>repeat</b> k times:
+                <b>if</b> best[agent] exists <b>and</b> random() &lt; 0.6:
+                    candidate &larr; combine(best[agent].operator, mutate(best[agent].params))
+                <b>else</b>:
+                    op &larr; random choice from agent's favourite operators
+                    candidate &larr; combine(op, random params)          <span class="c"># new action</span>
+                drawing &larr; run_turtle(candidate)                         <span class="c"># new state</span>
+                score &larr; fitness(drawing)
+                <b>if</b> overlap(drawing, every archived drawing) &lt; 0.6: archive.add(drawing)
+                <b>if</b> score &gt; best[agent].score: best[agent] &larr; candidate
+    <b>return</b> best drawings + archive</pre>
+
+<h2>8. What could the fitness function be?</h2>
+<p><b>Fitness = 0.4 &times; Novelty + 0.4 &times; Aesthetics + 0.2 &times; Inheritance</b></p>
+<ul>
+  <li><b>Novelty</b> = 1 &minus; the largest overlap (IoU of the pixel grids) with either parent. A drawing that looks like a
+  plain spiral or a plain star scores low.</li>
+  <li><b>Aesthetics</b> borrows from Alexander's <i>living geometry</i>. It combines:
+    <ul>
+      <li><b>local symmetry</b> (does the drawing match itself after a 3-, 4-, 5-, 6- or 8-fold rotation?);</li>
+      <li><b>balanced coverage</b> (about 30% of the canvas inked);</li>
+      <li><b>levels of scale</b> (a healthy mix of short and long strokes).</li>
+    </ul></li>
+  <li><b>Inheritance</b> = 1 &minus; |2&middot;share<sub>A</sub> &minus; 1|. It is 1.0 when both parents contribute equally, so
+  the child is a real <i>combination</i> and not a copy of one parent.</li>
+</ul>
+
+<h2>9. Worked example (real run)</h2>
+<p>Both parents start with an aesthetics score of only <b>0.540</b> (spiral) and <b>0.547</b> (star). The table shows
+each agent's best drawing so far after every round:</p>
+<table>
+  <tr><th class="num">Round</th><th>Agent</th><th>Best operator</th><th class="num">Fitness</th><th class="num">Novelty</th><th class="num">Aesthetics</th><th class="num">Archive size</th></tr>
+  <tr><td class="num">1</td><td>A-spiral</td><td>compose</td><td class="num">0.703</td><td class="num">0.732</td><td class="num">0.525</td><td class="num">2</td></tr>
+  <tr><td class="num">1</td><td>B-star</td><td>nest</td><td class="num">0.616</td><td class="num">0.499</td><td class="num">0.641</td><td class="num">3</td></tr>
+  <tr><td class="num">3</td><td>A-spiral</td><td>compose</td><td class="num">0.779</td><td class="num">0.684</td><td class="num">0.763</td><td class="num">10</td></tr>
+  <tr><td class="num">3</td><td>B-star</td><td>compose</td><td class="num">0.735</td><td class="num">0.677</td><td class="num">0.661</td><td class="num">13</td></tr>
+  <tr class="hl"><td class="num">6</td><td>A-spiral</td><td>compose</td><td class="num">0.793</td><td class="num">0.672</td><td class="num">0.810</td><td class="num">23</td></tr>
+  <tr><td class="num">6</td><td>B-star</td><td>compose</td><td class="num">0.749</td><td class="num">0.669</td><td class="num">0.703</td><td class="num">26</td></tr>
+</table>
+<p>Check of the winner: 0.4 &times; 0.672 + 0.4 &times; 0.810 + 0.2 &times; 1.0 = <b>0.793</b>. B-star started with
+"nest", then switched to "compose" after it saw that operator do better. By the end the archive held
+<b>26 different new drawings</b>.</p>
+<figure><img src="images/q08_chart1_drawings.png" alt="drawings"><figcaption>Figure 2. The real drawings. Top-left: the two parents. Others: the best new drawing for each way of combining actions.</figcaption></figure>
+<figure><img src="images/q08_chart2_fitness_space.png" alt="fitness and search space"><figcaption>Figure 3. Left: each agent's best fitness per round, with archive size as bars. Right: search-space growth after adding new actions.</figcaption></figure>
+
+<h2>10. How do both agents create new states together?</h2>
+<ul>
+  <li><b>Different styles.</b> A-spiral prefers blend; B-star prefers interleave. Their proposals come from different
+  corners of the search space, which keeps diversity high. This is co-operative creativity, not two copies of one agent.</li>
+  <li><b>Shared archive.</b> Once one agent adds a drawing, the other gets no credit for repeating it. The pair is
+  pushed toward fresh states.</li>
+  <li><b>Learning from each other.</b> Both agents ended up favouring "compose", because the archive and scores showed it worked.</li>
+  <li>The final archive is a set of <b>choices, not one answer</b>. A human artist can pick the one they like.</li>
+</ul>
+
+<h2>11. Code and real run</h2>
+<p>The program <code>q08_code.py</code> draws the parents, runs both agents for 6 rounds and saves every figure in this answer.</p>
+<figure class="shot"><img src="images/q08_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The multi-agent search function and the real terminal output.</figcaption></figure>
+
+<h2>12. Summary</h2>
+<div class="key">A search space is everything reachable through the available actions. Combining one action from each
+parent (compose, blend, nest, interleave) adds new actions. That grew the space 28.7 times and produced drawings neither
+parent could make. A fitness of novelty + aesthetics + balanced inheritance, plus a shared archive, guided two agents
+from fitness 0.62&ndash;0.70 to 0.75&ndash;0.79.</div>
+
+<p class="files">Files in this folder: <code>q08_code.py</code> (source), <code>q08_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q08_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

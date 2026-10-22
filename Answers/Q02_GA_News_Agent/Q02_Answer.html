@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q2 - Goal-Based News Agent with a Genetic Algorithm</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q2. Goal-Based News Agent with a Genetic Algorithm</h1>
+</header>
+
+<div class="question"><b>Question.</b> For a "news reporting" product, design a goal-based agent that uses a genetic algorithm (GA)
+in its agent function. S is the original set of news and G is the target news with the expected reader impact. Every square in
+Diagram 2 has a fitness and comes from legal moves with genetic operators. Give the detailed design: an initial population
+of at least four news items, four genetic operators, a fitness function, pseudocode, the working algorithm and a discussion of
+exit criteria. No more than two black squares may be visited in a row.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>Think of Diagram 2 as a <b>map of every version of one news story</b>. S is the story as first written. G is the version
+that gives the impact we want on readers. Each square is a version, and a move to the next square is one edit: swap the
+headline, add a fact, change the tone, cut a sensational line. The GA does not walk one path. It grows a whole
+<i>population</i> of edit sequences, keeps the ones that get closest to G, mixes them and mutates them. After some
+generations, one sequence reaches G safely.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>The map has 7 &times; 12 squares. <b>Grey</b> squares are acceptable versions (quality 0.7). <b>Black</b> squares are risky
+  versions: sensational, unverified or biased (quality 0.2).</li>
+  <li><b>C and D</b> are editorial checkpoints (fact-check desk and legal desk). Passing through them earns a small bonus.</li>
+  <li>Rule from the question: <b>no more than two black squares in a row.</b> A third black square in a row is a violation.</li>
+  <li>An edit that would leave the map is skipped (that operator does nothing).</li>
+</ul>
+
+<h2>3. Agent design</h2>
+<table>
+  <tr><th style="width:24%">Part</th><th>News agent</th></tr>
+  <tr><td>Agent type</td><td><b>Goal-based:</b> it knows the goal G and plans edits to reach it. The GA is its planning step.</td></tr>
+  <tr><td>Performance measure</td><td>Gap to target impact, accuracy and quality of the story, rule obeyed, few edits</td></tr>
+  <tr><td>Environment</td><td>The story versions, readers, editors, fact sources</td></tr>
+  <tr><td>Sensors</td><td>News feeds, reader clicks and shares, fact-check results</td></tr>
+  <tr><td>Actuators</td><td>The four edit operators, then publish or send to an editor</td></tr>
+  <tr><td>Agent function</td><td>Run the GA on the percept (current story S), then publish the best sequence's final version</td></tr>
+</table>
+
+<h3>Initial population (four news items)</h3>
+<p>Each news item is a chromosome with seven genes: headline, lead, facts, sources, tone, length and image.</p>
+<table>
+  <tr><th>Item</th><th>Headline</th><th>Facts</th><th>Sources</th><th>Tone</th><th>Length</th><th>Risk</th></tr>
+  <tr><td>N1 Bridge</td><td>"SHOCK: city bridge collapses!"</td><td>2</td><td>1</td><td>alarming</td><td>short</td><td>black</td></tr>
+  <tr><td>N2 Health</td><td>"New flu strain: what we know"</td><td>5</td><td>3</td><td>calm</td><td>medium</td><td>grey</td></tr>
+  <tr><td>N3 Tech</td><td>"Phone maker unveils foldable"</td><td>4</td><td>2</td><td>neutral</td><td>medium</td><td>grey</td></tr>
+  <tr><td>N4 Sports</td><td>"UNBELIEVABLE final-over win"</td><td>3</td><td>1</td><td>excited</td><td>short</td><td>black</td></tr>
+</table>
+<p>In the run, the GA's own population is 60 <b>operator sequences</b> (30 edits each) applied to the story, which is
+what moves a version across the map.</p>
+
+<h3>The four genetic operators</h3>
+<table>
+  <tr><th style="width:10%">Move</th><th>Operator</th><th>What it does to the story</th></tr>
+  <tr><td>L</td><td>Crossover</td><td>Take the headline of one news item and the body of another</td></tr>
+  <tr><td>D</td><td>Fact insertion (mutation)</td><td>Add a verified fact, quote or source</td></tr>
+  <tr><td>R</td><td>Tone mutation</td><td>Rewrite the tone, e.g. alarming &rarr; calm</td></tr>
+  <tr><td>U</td><td>Deletion / inversion</td><td>Remove a sensational line, or reorder into an inverted pyramid</td></tr>
+</table>
+<p>Real example from the run, on "SHOCK: city bridge collapses, thousands trapped!": the delete operator gives "City bridge
+collapses, thousands trapped", and the tone mutation gives "Bridge section collapses in city; rescue under way".</p>
+
+<h3>Fitness function</h3>
+<p><b>F = 0.45&middot;closeness + 0.30&middot;reached + 0.15&middot;avg quality + 0.05&middot;checkpoints &minus; 0.12&middot;violations &minus; 0.002&middot;length</b></p>
+<ul>
+  <li><b>closeness</b> = 1 &minus; (distance from the final square to G) / 17. This is the gap to the target impact.</li>
+  <li><b>reached</b> = 1 if the path ends on G. <b>avg quality</b> = mean quality of the visited squares.</li>
+  <li><b>checkpoints</b> = how many of C and D the path passes (0&ndash;2).</li>
+  <li><b>violations</b> = number of squares that make a run of three or more black squares. This is the penalty for the rule.</li>
+</ul>
+
+<h2>4. Working algorithm (step by step)</h2>
+<ol>
+  <li>Create 60 random operator sequences. Each starts at S.</li>
+  <li>Run each sequence on the map and compute its fitness.</li>
+  <li>Check the exit criteria (section 6). If met, return the best path.</li>
+  <li>Pick parents by tournament (best of 3 random sequences).</li>
+  <li>Crossover: join the first part of one parent with the second part of the other.</li>
+  <li>Mutate: each gene has a 4% chance of becoming a random operator.</li>
+  <li>Copy the 2 best sequences unchanged (elitism), fill the rest with children and go to step 2.</li>
+</ol>
+<figure class="w70"><img src="images/q02_flowchart.png" alt="GA flowchart"><figcaption>Figure 1. Flowchart of the GA inside the news agent.</figcaption></figure>
+
+<h2>5. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> NewsAgent(S, G):                                  <span class="c"># goal-based agent function</span>
+    population &larr; 60 random operator sequences (length 30)
+    <b>for</b> generation = 0 .. MAX_GEN:
+        <b>for each</b> seq <b>in</b> population:
+            path &larr; apply operators from S, skip moves that leave the map
+            fitness(seq) &larr; closeness + reached + quality + checkpoints
+                            &minus; penalty(black squares in a row &gt; 2) &minus; length cost
+        best &larr; sequence with the highest fitness
+        <b>if</b> best reaches G <b>and</b> has no violations <b>and</b> no gain for 15 generations: <b>return</b> best
+        new &larr; the 2 best sequences
+        <b>while</b> new is not full:
+            p1, p2 &larr; tournament_selection(population)
+            child &larr; one_point_crossover(p1, p2)
+            mutate each gene with probability 0.04
+            new.add(child)
+        population &larr; new
+    <b>return</b> best</pre>
+
+<h2>6. Exit criteria</h2>
+<p>A GA never knows it is "done", so we need clear stopping rules. The agent stops when <b>any</b> of these is true:</p>
+<table>
+  <tr><th style="width:36%">Rule</th><th>Why</th></tr>
+  <tr><td><b>Goal met:</b> best path ends on G with zero rule violations</td><td>The story reaches the target impact safely. This is the main rule.</td></tr>
+  <tr><td><b>Plateau:</b> no improvement for 15 generations</td><td>More search is wasting time. Combined with the goal rule, it also lets the path get shorter first.</td></tr>
+  <tr><td><b>Generation limit</b> (150) or time budget</td><td>The news deadline is fixed. The agent must publish something.</td></tr>
+  <tr><td><b>Editor approval</b> (manual inspection)</td><td>A human can accept a good enough version at any time.</td></tr>
+</table>
+<p>The black-square rule is not an exit rule. It is a <b>feasibility check</b>: a path with violations can never be the final answer.</p>
+
+<h2>7. Result of a real run</h2>
+<table>
+  <tr><th class="num">Generation</th><th class="num">Best fitness</th><th class="num">Average fitness</th></tr>
+  <tr><td class="num">0</td><td class="num">0.399</td><td class="num">&minus;0.028</td></tr>
+  <tr><td class="num">5</td><td class="num">0.833</td><td class="num">0.349</td></tr>
+  <tr><td class="num">10</td><td class="num">0.883</td><td class="num">0.586</td></tr>
+  <tr><td class="num">30</td><td class="num">0.891</td><td class="num">0.685</td></tr>
+  <tr class="hl"><td class="num">54 (exit)</td><td class="num">0.904</td><td class="num">0.805</td></tr>
+</table>
+<p>The GA stopped at generation 54 (goal reached, no gain for 15 generations). The best path has <b>21 moves</b>, ends on
+G, visits only <b>2 black squares</b> (never in a row), has <b>0 violations</b> and passes both checkpoints C and D. The shortest
+possible walk is 17 moves, so the GA path is close to it.</p>
+<figure class="w80"><img src="images/q02_chart1_grid_path.png" alt="grid and best path"><figcaption>Figure 2. Diagram 2 recreated: the white line is the best path found by the GA. It passes D and C.</figcaption></figure>
+<figure class="w70"><img src="images/q02_chart2_fitness.png" alt="fitness per generation"><figcaption>Figure 3. Fitness rises fast in the first 10 generations, then slowly improves until the exit.</figcaption></figure>
+
+<h2>8. Code and real run</h2>
+<figure class="shot"><img src="images/q02_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The GA function (lines 59&ndash;81) and the real terminal output.</figcaption></figure>
+
+<h2>9. Summary</h2>
+<div class="key">The agent is goal-based, and its planning step is a GA. Each square is a news version, each move is one
+genetic operator, and fitness combines closeness to the target impact, quality, checkpoints and the black-square rule. The
+GA exited at generation 54 with a legal 21-move path from S to G. Clear exit rules (goal met, plateau, limit, editor)
+keep it from running forever.</div>
+
+<p class="files">Files in this folder: <code>q02_code.py</code> (source), <code>q02_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q02_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

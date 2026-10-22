@@ -1,0 +1,17 @@
+Q9  P-creativity -> H-creativity with an evolutionary algorithm (vehicle designs)
+History archive: 300 known designs | P-new: dist to own archive > 0.12 | H-new: dist to history > 0.4 and usefulness > 0.7
+Run 'global+expand': generations 1-20 plain EA, from 21 global archive + new gene
+   gens | P-creative | H-creative | share H
+  1-5   |        130 |         11 |   8.5%
+  6-10  |         46 |          3 |   6.5%
+ 11-15  |         21 |          0 |   0.0%
+ 16-20  |         15 |          1 |   6.7%
+ 21-25  |         60 |         12 |  20.0%
+ 26-30  |         60 |         26 |  43.3%
+ 31-35  |         47 |         37 |  78.7%
+ 36-40  |         42 |         30 |  71.4%
+Totals after 40 generations:
+  P-only         P-creative  276 | H-creative  18 | H share  6.5%
+  global         P-creative  294 | H-creative  33 | H share 11.2%
+  global+expand  P-creative  421 | H-creative 120 | H share 28.5%
+charts saved to images/

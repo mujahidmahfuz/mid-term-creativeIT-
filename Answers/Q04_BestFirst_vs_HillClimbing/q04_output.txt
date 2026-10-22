@@ -1,0 +1,17 @@
+PART A  Diagram 3 convergence (start A at x = 1.3, peak C at x = 6.00, f = 85.00)
+  strategy              | moves | final x | f(x)  | gap to peak
+  fixed small step 0.1  |    47 |   6.000 | 85.00 | 0.000
+  fixed big step 1.5    |     3 |   5.800 | 84.38 | 0.623
+  adaptive A/B/C        |    12 |   5.997 | 85.00 | 0.000
+  adaptive step in zone A: 1.2
+  adaptive step in zone B: 0.6, 0.6, 0.6, 0.6, 0.6, 0.6
+  adaptive step in zone C: 0.15, 0.075, 0.0375, 0.01875, 0.009375
+PART B  Q3 airport + f: new pier (+20 floor, +2 gates, +8 seats), g: gate + 4 seats
+  designs reachable in 6 moves: a-e = 650, a-g = 1765
+  method                | actions | designs scored | best score | design (gates, counters, area)
+  hill climbing         | a-e     |            117 |      79.40 | 14, 13, 100
+  best-first (400)      | a-e     |            875 |      79.40 | 14, 13, 100
+  hill climbing         | a-g     |            158 |      82.49 | 17, 14, 120
+  best-first (400)      | a-g     |           1856 |      82.87 | 19, 14, 128
+  hill climbing a-g, moves in order: e+ d+ d+ d+ g b b b b g a b b f a a b b
+charts saved to images/

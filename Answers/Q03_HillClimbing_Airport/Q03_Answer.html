@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q3 - Hill Climbing for Airport Design and Gate Arrangement</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q3. Hill Climbing for Airport Design and Gate Arrangement</h1>
+</header>
+
+<div class="question"><b>Question.</b> Airport authorities use hill climbing to improve an airport design. The start is
+the blueprint of an airport in another city. The goal is judged by votes of ten frequent travellers, average waiting time,
+use of space and senior-citizen friendliness. Neighbours come only from small changes: (a) add a gate, (b) add one
+immigration counter, (c) remove unnecessary space, (d) move one shop, (e) grow or shrink the waiting area. Write pseudocode,
+explain how the algorithm works here (A start state, B action selection, C goal state), and discuss the limitations and the
+local maxima.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>Hill climbing is like walking uphill in fog. You only see the ground next to you, so you take the step that goes up the
+most, and you stop when every step goes down. Here, each "position" is one airport design. Each step is one small change
+from the list a&ndash;e, and "height" is the design score. The algorithm is cheap and simple, but it can stop on a small
+hill and believe it is the top.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>A design is a vector: <b>(gates, immigration counters, built area, shop zone, waiting-area units)</b>.</li>
+  <li>Floor space: a gate needs 3 units, a counter 1.5, the waiting area 1 unit per unit, and shops/toilets a fixed 12.
+  The design is legal only if all of this fits inside the built area.</li>
+  <li>Peak demand needs about 18 gates and 12 counters. Idle gates or counters do not count as "used" space.</li>
+  <li>Each of the 10 travellers has their own priorities (short wait, seats, shops near the gates, short immigration queue)
+  and votes "yes" if the design pleases them enough.</li>
+</ul>
+
+<h2>3. A, B and C in this scenario</h2>
+<table>
+  <tr><th style="width:20%">Part</th><th>Meaning here</th></tr>
+  <tr><td><b>A. Start state</b></td><td>Blueprint copied from another city: 10 gates, 6 counters, area 100, shops landside,
+    waiting area 14. Score <b>20.5</b>.</td></tr>
+  <tr><td><b>B. Action selection</b></td><td>Make every neighbour with one legal small change (a: +1 gate; b: +1 counter;
+    c: remove 6 units of space; d: move shops one zone in or out; e: waiting area &plusmn;4). Score them all and pick the
+    <b>best</b> one (steepest ascent).</td></tr>
+  <tr><td><b>C. Goal state</b></td><td>The design with the highest score, where no small change improves it any more.</td></tr>
+</table>
+<p><b>Score C</b> (0&ndash;100) = 100 &times; (0.30&middot;votes/10 + 0.30&middot;wait score + 0.15&middot;space use + 0.25&middot;senior index)</p>
+<ul>
+  <li><b>Average wait</b> (min) = 6 + 260/gates + 150/counters (no gain beyond 14 counters) + crowding, where crowding = 0.9 &times; (1.6&middot;gates &minus; waiting area)
+    if there are too few seats. Wait score = (50 &minus; wait)/40, clipped to 0&ndash;1.</li>
+  <li><b>Space use</b> = floor actually busy at peak / built area.</li>
+  <li><b>Senior index</b> = seats per gate, shops close to the seating, short queues, and a small penalty for very long walks (more than 16 gates).</li>
+</ul>
+
+<h2>4. How the algorithm works here (step by step)</h2>
+<ol>
+  <li>Load blueprint A and compute its score.</li>
+  <li>Build all neighbours by applying each action a&ndash;e once. Throw away the ones that do not fit the floor space.</li>
+  <li>Score every neighbour and keep the best one.</li>
+  <li>If the best neighbour scores higher than the current design, move to it and go back to step 2.</li>
+  <li>If not, stop. The current design is a peak, but it may be only a <i>local</i> peak.</li>
+  <li>Optionally, restart from new random blueprints and keep the best final design (random-restart hill climbing).</li>
+</ol>
+<figure class="w70"><img src="images/q03_flowchart.png" alt="hill climbing flowchart"><figcaption>Figure 1. Flowchart of steepest-ascent hill climbing for the airport.</figcaption></figure>
+
+<h2>5. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> HillClimbAirport(blueprint):
+    current &larr; blueprint                                  <span class="c"># A: start state</span>
+    <b>loop</b>:
+        neighbours &larr; { }
+        <b>for each</b> action <b>in</b> {a: +gate, b: +counter, c: -space, d: move shop, e: &plusmn;waiting}:
+            n &larr; apply(action, current)                    <span class="c"># B: action selection</span>
+            <b>if</b> fits_floor_space(n): neighbours.add(n)
+        best &larr; neighbour with the highest Score(n)
+        <b>if</b> Score(best) &le; Score(current):
+            <b>return</b> current                               <span class="c"># C: peak (maybe a local maximum)</span>
+        current &larr; best
+
+<b>function</b> Score(d):
+    <b>return</b> 100 &times; (0.30&middot;votes(d)/10 + 0.30&middot;wait_score(d) + 0.15&middot;space_use(d) + 0.25&middot;senior(d))</pre>
+
+<h2>6. Worked example (real run)</h2>
+<p>Starting from blueprint A (score 20.5), the algorithm made 17 uphill steps. The steps are grouped here into phases:</p>
+<table>
+  <tr><th>Steps</th><th>Changes chosen (B)</th><th class="num">Score after</th><th>What happened</th></tr>
+  <tr><td>1&ndash;4</td><td>waiting area +4, shops moved inward 3 times</td><td class="num">42.60</td><td>cheap comfort fixes win first</td></tr>
+  <tr><td>5</td><td>waiting area +4</td><td class="num">49.90</td><td>more seats for passengers</td></tr>
+  <tr><td>6&ndash;12</td><td>6 immigration counters, 1 gate</td><td class="num">70.65</td><td>immigration queue was the bottleneck</td></tr>
+  <tr><td>13&ndash;16</td><td>3 gates, waiting area +4</td><td class="num">78.68</td><td>gates and seats grow together</td></tr>
+  <tr class="hl"><td>17</td><td>+1 counter</td><td class="num">79.40</td><td>floor is now full, so it stops</td></tr>
+</table>
+<p>The final design has 14 gates, 13 counters, area 100, shops near the gates and waiting area 26. It gets 10/10 votes,
+an average wait of 36.1 min, 98% space use and a senior index of 0.97.</p>
+<figure class="w90"><img src="images/q03_chart1_score_per_step.png" alt="score per step"><figcaption>Figure 2. Score after each step. Orange: the blueprint run. Grey: 12 random restarts. Green: the best restart.</figcaption></figure>
+
+<h2>7. What are the local maxima in this case?</h2>
+<p>A local maximum is a design where every legal small change lowers the score, even though a better design exists
+elsewhere. Our run ends at exactly such a point, at <b>79.40</b>:</p>
+<ul>
+  <li>The blueprint's building has only 100 units of floor. Once gates, counters and seats fill it (99.5 units used),
+  <b>adding a gate, a counter or more seats no longer fits</b>. Those uphill moves are blocked.</li>
+  <li>The only legal moves are moving the shops (score 73.9) or shrinking the waiting area (77.1). Both go downhill, so
+  hill climbing stops.</li>
+  <li>Actions a&ndash;e can only <i>remove</i> space, never add it. The climber is trapped by the blueprint's footprint.</li>
+</ul>
+<p>Random restarts show the bigger picture. Final scores were 82.1, 82.5, 54.8, 82.5, 81.1, 80.9, 66.8, 80.1, 81.5,
+66.3, 82.1 and 80.6. The best one (18 gates, 13 counters, area 122, waiting area 36) reaches <b>82.52</b>. That is
+higher than our 79.40, so 79.40 is a local maximum. The runs stuck at 54.8, 66.8 and 66.3 are other, lower local maxima.</p>
+<figure class="w90"><img src="images/q03_chart2_neighbours_at_stop.png" alt="neighbours at the stop"><figcaption>Figure 3. At the stop, the legal moves go down and the uphill moves are blocked by the lack of floor space.</figcaption></figure>
+<p>Other airport-style local maxima are easy to imagine. One example: seats are tuned perfectly for 14 gates, so adding
+one gate creates crowding. It only pays off if gates <i>and</i> seats grow together, which is a <b>ridge</b> that
+single-step moves cannot climb. Another example is a <b>plateau</b>: moving a shop between two zones that travellers rate
+the same changes nothing, so the climber cannot tell which way to go.</p>
+
+<h2>8. Limitations in this case</h2>
+<ul>
+  <li><b>Blueprint bias:</b> starting from another city's airport fixes the footprint and the traffic assumptions, which may not match this city.</li>
+  <li><b>Local maxima, ridges and plateaus:</b> the method stops at the first peak, needs two changes at once to climb a
+  ridge, and gets no direction on a plateau.</li>
+  <li><b>Noisy, subjective goal:</b> 10 travellers is a tiny sample, so votes can flip with one opinion.</li>
+  <li><b>Costly evaluation:</b> real waiting times need simulation for every neighbour.</li>
+  <li><b>No memory or backtracking:</b> once it moves, it never reconsiders an earlier choice.</li>
+  <li><b>Small actions only:</b> big ideas like a new terminal wing can never appear (Q4 adds such actions).</li>
+</ul>
+<div class="note"><b>Fixes:</b> random restarts (different blueprints), simulated annealing (accept a few downhill steps
+early on), tabu lists, compound moves (gate + seats together), or a larger action space.</div>
+
+<h2>9. Code and real run</h2>
+<p><code>q03_code.py</code> builds the score model, runs steepest-ascent hill climbing from the blueprint and from 12 random
+blueprints, and draws the charts.</p>
+<figure class="shot"><img src="images/q03_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The legality check and the hill-climbing function (lines 65&ndash;86), with the real terminal output.</figcaption></figure>
+
+<h2>10. Summary</h2>
+<div class="key">Hill climbing improves the copied blueprint (A) one legal small change at a time (B), always taking
+the best neighbour, until no change helps (C). It took the score from 20.5 to 79.40 in 17 steps. It then got stuck,
+because the old building was full and actions a&ndash;e can only remove space. Random restarts found 82.52, which proves
+the stop was a local maximum. Restarts, annealing or bigger moves are needed to reach the true best design.</div>
+
+<p class="files">Files in this folder: <code>q03_code.py</code> (source), <code>q03_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q03_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

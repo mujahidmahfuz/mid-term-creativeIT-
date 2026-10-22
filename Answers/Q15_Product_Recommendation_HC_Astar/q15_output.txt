@@ -1,0 +1,21 @@
+Heuristic h(p) = distance to preference [0.45, 0.8, 0.85, 0.65] (lower is better)
+  ranking: P6 0.21, P5 0.23, P3 0.28, P4 0.34, P10 0.50, P8 0.61, P2 0.66, P7 0.67, P9 0.71, P1 0.89
+
+HILL CLIMBING from P1 Basic phone
+  step 0: P1 Basic phone     h = 0.890
+  step 1: P3 Mid phone       h = 0.278
+  stops at P3 Mid phone (global best is P6 Pro tablet, h = 0.212)
+  local maxima that are not the global best: P3, P8, P10
+
+Plain HC reaches the global best from 3 of 10 start products
+Random restart (4 runs) ends at P6 (h = 0.212)
+Annealing + serendipity jumps from the same start: 17/20 runs find P6
+
+MULTI-GOAL: goals P6 (quality fan) and P9 (bargain hunter)
+  weighted sum 0.7/0.3 top-3: P5, P3, P6
+  Pareto set: P2, P3, P5, P6, P9
+
+A* BEFORE feedback: P1 -> P2 -> P3 -> P6  (g = 1.112)
+  feedback: liked P3, skipped P5 -> u' = [0.5, 0.79, 0.77, 0.62]
+A* AFTER correction: P1 -> P2 -> P3  (g = 0.630, new goal P3)
+charts saved to images/

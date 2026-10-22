@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q5 - Heuristic vs Non-Heuristic Search and Simulated Annealing for Recommendation</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q5. Heuristic vs Non-Heuristic Search, and Simulated Annealing for Product Recommendation</h1>
+</header>
+
+<div class="question"><b>Question.</b> Discuss heuristic and non-heuristic search approaches. In product recommendation
+you want to use the simulated annealing (SA) search algorithm to recommend products. How will you use it? Explain in
+detail with an example.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>A recommender has to pick a few products, a "slate", from a big catalogue. Trying every slate is too slow, so we
+<b>search</b>. Plain hill climbing only accepts changes that make the slate better, so it gets stuck on the first good-looking
+slate. Simulated annealing behaves like a curious shopper: early on (when it is "hot") it sometimes accepts a <i>worse</i>
+slate just to look around. As it "cools down" it becomes picky and settles on the best slate it found.</p>
+
+<h2>2. Heuristic vs non-heuristic search</h2>
+<p><b>Non-heuristic (uninformed, blind) search</b> uses only the problem definition: start, actions and goal test. It has
+no idea which direction is "warmer". <b>Heuristic (informed) search</b> also uses a function h(n) or a score that estimates
+how good or how close a state is, so it can try promising states first.</p>
+<table>
+  <tr><th>Type</th><th>Algorithm</th><th>What guides it</th><th>Complete?</th><th>Optimal?</th><th>Memory</th></tr>
+  <tr><td rowspan="4">Non-heuristic</td><td>Breadth-first (BFS)</td><td>FIFO queue, level by level</td><td>Yes</td><td>Yes, if step costs are equal</td><td>High, O(b<sup>d</sup>)</td></tr>
+  <tr><td>Depth-first (DFS)</td><td>LIFO stack, deepest first</td><td>No</td><td>No</td><td>Low, O(bm)</td></tr>
+  <tr><td>Uniform cost (UCS)</td><td>Lowest path cost g(n)</td><td>Yes (step cost &gt; 0)</td><td>Yes</td><td>High</td></tr>
+  <tr><td>Iterative deepening</td><td>DFS with a growing depth limit</td><td>Yes</td><td>Yes, for unit costs</td><td>Low</td></tr>
+  <tr><td rowspan="4">Heuristic</td><td>Greedy best-first</td><td>Lowest h(n) only</td><td>No</td><td>No</td><td>High</td></tr>
+  <tr><td>A*</td><td>f(n) = g(n) + h(n)</td><td>Yes</td><td>Yes, if h is admissible</td><td>High</td></tr>
+  <tr><td>Hill climbing</td><td>Best neighbour only</td><td>No (local maxima)</td><td>No</td><td>Very low (1 state)</td></tr>
+  <tr><td>Simulated annealing</td><td>Score + random worse moves, cooling T</td><td>Yes, in the limit of slow cooling</td><td>Probabilistically</td><td>Very low (1 state)</td></tr>
+</table>
+<p>For recommendations the "path" does not matter; only the final slate does. That makes <b>local search</b> (hill
+climbing, SA) a natural fit: it keeps one slate in memory and keeps improving it.</p>
+
+<h2>3. Assumptions</h2>
+<ul>
+  <li>A catalogue of <b>16 products</b> in 9 categories. Each product has an interest vector (audio, fitness, photo, work) and a popularity value.</li>
+  <li>One user who likes audio, fitness and photography, and who <b>has been browsing phones all week</b>.</li>
+  <li>We show a slate of <b>k = 3</b> products. That gives C(16,3) = 560 possible slates, small enough to check the true best by brute force.</li>
+</ul>
+
+<h2>4. Mapping SA to recommendation</h2>
+<table>
+  <tr><th style="width:24%">SA term</th><th>Meaning here</th></tr>
+  <tr><td>State</td><td>A slate of 3 products for this user</td></tr>
+  <tr><td>Neighbour</td><td>Swap one product in the slate for one outside it</td></tr>
+  <tr><td>Score (energy)</td><td>score = mean relevance + 0.2 &times; mean novelty + 0.25 variety bonus</td></tr>
+  <tr><td>Relevance</td><td>0.7 &times; cosine(user, product) + 0.3 if the product is a phone (browsing history)</td></tr>
+  <tr><td>Novelty</td><td>1 &minus; popularity (less famous items feel fresher)</td></tr>
+  <tr><td>Variety bonus</td><td>+0.25 only when all 3 products come from different categories</td></tr>
+  <tr><td>Temperature T</td><td>How willing we are to try a worse slate. Starts at T<sub>0</sub> = 0.10</td></tr>
+  <tr><td>Acceptance</td><td>Better slate: always. Worse slate: with probability p = e<sup>&Delta;/T</sup></td></tr>
+  <tr><td>Cooling</td><td>T &larr; 0.97 &times; T after every step, for 250 steps</td></tr>
+</table>
+
+<h2>5. How to use SA in a recommender (step by step)</h2>
+<ol>
+  <li>Build the starting slate from what the user already looks at (here, their 3 most-viewed phones).</li>
+  <li>Set a high starting temperature. This is the exploring phase.</li>
+  <li>Make a random neighbour: swap one product.</li>
+  <li>If the new slate scores higher, keep it. If it scores lower, keep it anyway with probability e<sup>&Delta;/T</sup>.</li>
+  <li>Cool down (T &larr; &alpha;T) and repeat. Remember the best slate seen so far.</li>
+  <li>When T is tiny, show the best slate. Re-run it every session, because the user's history changes.</li>
+</ol>
+<figure class="w70"><img src="images/q05_flowchart.png" alt="SA flowchart"><figcaption>Figure 1. Flowchart of simulated annealing for a recommendation slate.</figcaption></figure>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> SA_Recommend(start_slate, T0 = 0.10, alpha = 0.97, iters = 250):
+    current &larr; start_slate;  best &larr; current;  T &larr; T0
+    <b>for</b> it = 1 to iters:
+        out &larr; random product in current
+        inn &larr; random product not in current
+        candidate &larr; current with out replaced by inn         <span class="c"># neighbour</span>
+        delta &larr; score(candidate) &minus; score(current)
+        <b>if</b> delta &gt; 0 <b>or</b> random() &lt; e^(delta / T):          <span class="c"># worse moves allowed while hot</span>
+            current &larr; candidate
+        <b>if</b> score(current) &gt; score(best): best &larr; current
+        T &larr; alpha &times; T                                     <span class="c"># gradual cooling</span>
+    <b>return</b> best</pre>
+
+<h2>7. Worked example (real run)</h2>
+<h3>Hill climbing gets stuck on "all phones"</h3>
+<p>The start slate is <b>Phone Pro X, Phone Max, Phone Lite</b> with score <b>0.961</b>. Hill climbing makes one good
+swap (Phone Max &rarr; Phone Mini, score <b>1.007</b>) and then stops. Every single swap from there is worse. Taking out
+one phone loses a lot of relevance, and with only two categories there is no variety bonus yet. This is a
+<b>local maximum</b>: a "same-category" bubble.</p>
+
+<h3>SA walks out of the bubble</h3>
+<table>
+  <tr><th class="num">Iter</th><th class="num">T</th><th>Move tried</th><th class="num">&Delta;</th><th class="num">p</th><th>Result</th><th class="num">Score now</th></tr>
+  <tr><td class="num">1</td><td class="num">0.100</td><td>Phone Pro X &rarr; Action Cam</td><td class="num">&minus;0.058</td><td class="num">0.56</td><td>accepted (worse!)</td><td class="num">0.903</td></tr>
+  <tr><td class="num">2</td><td class="num">0.097</td><td>Phone Lite &rarr; Home Speaker</td><td class="num">+0.073</td><td class="num">1.00</td><td>accepted</td><td class="num">0.976</td></tr>
+  <tr><td class="num">3</td><td class="num">0.094</td><td>Action Cam &rarr; Phone Lite</td><td class="num">&minus;0.174</td><td class="num">0.16</td><td>rejected</td><td class="num">0.976</td></tr>
+  <tr class="hl"><td class="num">4</td><td class="num">0.091</td><td>Home Speaker &rarr; SportBuds</td><td class="num">+0.060</td><td class="num">1.00</td><td>accepted</td><td class="num">1.036</td></tr>
+</table>
+<p>At iteration 1 SA accepts a <b>worse</b> slate (&Delta; = &minus;0.058, p = e<sup>&minus;0.058/0.10</sup> &asymp; 0.56). That
+single "step down" lets it reach three different categories at iteration 2 and earn the variety bonus. By iteration 4 it
+is at 1.036, already above the hill-climbing peak of 1.007. A very bad move at iteration 3 (&Delta; = &minus;0.174) had
+only a 16% chance and was rejected.</p>
+
+<table>
+  <tr><th>Slate</th><th class="num">Mean relevance</th><th class="num">0.2 &times; novelty</th><th class="num">Variety</th><th class="num">Score</th></tr>
+  <tr><td>Start: Pro X, Max, Lite</td><td class="num">0.938</td><td class="num">0.023</td><td class="num">0</td><td class="num">0.961</td></tr>
+  <tr><td>Hill-climbing peak: Pro X, Lite, Mini</td><td class="num">0.964</td><td class="num">0.043</td><td class="num">0</td><td class="num">1.007</td></tr>
+  <tr class="hl"><td>SA result: Phone Mini, Tab S, Action Cam</td><td class="num">0.734</td><td class="num">0.100</td><td class="num">0.25</td><td class="num">1.084</td></tr>
+</table>
+<p>As T fell (0.048 at iteration 25, 0.005 at 100, 0.0001 at 250), SA accepted fewer bad moves (15 in total, almost all
+early). It ended on <b>Phone Mini, Tab S, Action Cam = 1.084</b>. A brute-force check of all 560 slates confirms
+this is the <b>global optimum</b>. The slate is still relevant (one phone the user likes) but also fresh and varied.</p>
+<figure><img src="images/q05_chart1_sa_run.png" alt="SA run"><figcaption>Figure 2. The real SA run. The red crosses are accepted worse moves. They happen while T is high, then die out as the system cools.</figcaption></figure>
+<figure class="w80"><img src="images/q05_chart2_sa_vs_hc.png" alt="SA vs HC"><figcaption>Figure 3. 30 runs from the same start. Hill climbing always stops at 1.007. SA finds the optimum in 28 of 30 runs (mean 1.082).</figcaption></figure>
+
+<h2>8. Why SA suits recommendation</h2>
+<ul>
+  <li><b>It breaks the filter bubble.</b> Pure "more of the same" (hill climbing on relevance) keeps showing phones. SA's
+  early worse moves bring in serendipity: the camera, the tablet.</li>
+  <li><b>Slow to heat and gradual cooling.</b> This is the course's choice principle: introduce the best choice gradually
+  and keep it warm. A hot start explores, slow cooling exploits, and the final slate is stable.</li>
+  <li><b>It is cheap.</b> Only one slate is kept in memory, and each step scores a single swap. It is easy to run per user, per session.</li>
+  <li><b>Tuning matters.</b> If T<sub>0</sub> is too low, SA behaves like hill climbing. If cooling is too fast, it freezes early
+  (2 of our 30 runs still missed the optimum). Random restarts or a slower &alpha; fix this.</li>
+</ul>
+
+<h2>9. Code and real run</h2>
+<p><code>q05_code.py</code> scores the slates, runs hill climbing, runs SA, checks the global optimum by brute force, and
+repeats SA 30 times for the comparison chart.</p>
+<figure class="shot"><img src="images/q05_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The SA function (lines 82-102) and the real terminal output of the full run.</figcaption></figure>
+
+<h2>10. Summary</h2>
+<div class="key">Non-heuristic search explores blindly. Heuristic search uses a score to head for good states. For
+recommendations we only care about the final slate, so local search fits. Hill climbing got trapped on an all-phones
+slate (1.007). Simulated annealing accepted a worse slate early (p = 0.56), escaped, and found the true best slate
+(1.084) in 28 of 30 runs. It mixes relevance with novelty and variety, which is exactly the creative balance a good
+recommender needs.</div>
+
+<p class="files">Files in this folder: <code>q05_code.py</code> (source), <code>q05_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q05_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

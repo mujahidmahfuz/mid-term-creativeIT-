@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q4 - Best-First vs Hill Climbing, Expanding the Spaces</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q4. Best-First vs Hill Climbing: Expanding the Search Space and Action Space</h1>
+</header>
+
+<div class="question"><b>Question.</b> What do best-first search and hill climbing have in common? How can best-first search
+expand the search space? Can the action space and the search space grow together? Using Diagram 3, can we control the
+convergence speed, and can it differ at A, B and C? For Q3, define two extra operations that expand the search space and
+describe their effect on the goal state.</div>
+
+<h2>1. What they have in common</h2>
+<ul>
+  <li>Both are <b>informed (heuristic) searches</b>. They use an evaluation score to decide which design to look at next.</li>
+  <li>Both are <b>greedy</b>: they pick what looks best <i>now</i>, not what is best after many steps.</li>
+  <li>Both expand a node by applying the same legal actions and scoring the children.</li>
+</ul>
+<table>
+  <tr><th style="width:20%"></th><th>Hill climbing</th><th>Best-first search</th></tr>
+  <tr><td>Memory</td><td>Only the current design</td><td>An OPEN list of every design generated</td></tr>
+  <tr><td>Next node</td><td>Best neighbour of the current one</td><td>Best design anywhere in OPEN</td></tr>
+  <tr><td>Backtracking</td><td>None, so it gets stuck on a local maximum</td><td>Yes, it can jump back to an older, promising node</td></tr>
+  <tr><td>Cost</td><td>Cheap</td><td>More memory and more designs scored</td></tr>
+</table>
+<p>In short, hill climbing is best-first search with a memory of size one.</p>
+
+<h2>2. Assumptions</h2>
+<ul>
+  <li>Diagram 3 is a score hill f(x) with its peak at x = 6. A is the foot (x = 1.3), B is the slope and C is the peak.</li>
+  <li>The airport model is the one from Q3: blueprint (10 gates, 6 counters, area 100, shops landside, waiting area 14).</li>
+  <li>Best-first gets a budget of 400 expansions, so the comparison is fair.</li>
+</ul>
+
+<h2>3. How can best-first search expand the search space?</h2>
+<p>Hill climbing throws away every neighbour it does not choose. Best-first keeps them all in OPEN. When the current
+branch stops improving, it simply pops the next most promising design, even one from several steps ago. So the explored
+space grows in many directions at once. In our run, best-first scored <b>875</b> designs with actions a&ndash;e, while hill
+climbing scored only <b>117</b>.</p>
+<figure class="w70"><img src="images/q04_flowchart.png" alt="best-first flowchart"><figcaption>Figure 1. Best-first search. The optional box shows the action space growing.</figcaption></figure>
+<pre class="pseudo"><b>function</b> BestFirst(S0, actions, budget):
+    OPEN &larr; {S0};  SEEN &larr; {S0};  best &larr; S0
+    <b>while</b> OPEN not empty <b>and</b> expansions &lt; budget:
+        n &larr; design in OPEN with the highest Score
+        best &larr; better of (best, n)
+        <b>for each</b> action <b>in</b> actions:                 <span class="c"># the action space can be expanded here</span>
+            child &larr; apply(action, n)
+            <b>if</b> child is legal <b>and</b> child not in SEEN: add to OPEN and SEEN
+    <b>return</b> best</pre>
+
+<h2>4. Can the action space and search space expand at the same time? Yes</h2>
+<p>Every new action creates new children, so a bigger action space automatically makes the reachable search space
+bigger. In the airport, <b>designs reachable in 6 moves rise from 650 (actions a&ndash;e) to 1765 (actions a&ndash;g)</b>.
+That is the idea of "expand search space + expand action space together": a new action is a new edge, and a new edge
+leads to new states.</p>
+
+<h2>5. Controlling convergence speed (Diagram 3)</h2>
+<p>Yes, we can control it, and it can be different at A, B and C. The tool is the <b>step size</b> (in simulated
+annealing the same job is done by the temperature).</p>
+<table>
+  <tr><th style="width:12%">Zone</th><th>Where</th><th>Rule used</th><th>Why</th></tr>
+  <tr><td><b>A</b></td><td>Foot, flat ground</td><td>Big step (1.2)</td><td>The slope is tiny, so small steps would crawl. Be bold.</td></tr>
+  <tr><td><b>B</b></td><td>Steep slope</td><td>Medium step (0.6)</td><td>Follow the gradient steadily. Fast and safe.</td></tr>
+  <tr><td><b>C</b></td><td>Near the peak</td><td>Halve the step after each overshoot</td><td>A big step would jump over the peak. Fine-tune.</td></tr>
+</table>
+<p>Real results from the code (start at A, peak value 85.00):</p>
+<table>
+  <tr><th>Strategy</th><th class="num">Moves</th><th class="num">Final x</th><th class="num">Score</th><th class="num">Gap to peak</th></tr>
+  <tr><td>Fixed small step 0.1</td><td class="num">47</td><td class="num">6.000</td><td class="num">85.00</td><td class="num">0.000</td></tr>
+  <tr><td>Fixed big step 1.5</td><td class="num">3</td><td class="num">5.800</td><td class="num">84.38</td><td class="num">0.623</td></tr>
+  <tr class="hl"><td>Adaptive A / B / C</td><td class="num">12</td><td class="num">5.997</td><td class="num">85.00</td><td class="num">0.000</td></tr>
+</table>
+<p>The small step is accurate but slow. The big step is fast but misses the peak. The adaptive step gets both: it
+reached the peak in 12 moves, about 4 times faster than the small step.</p>
+<figure><img src="images/q04_chart1_diagram3_convergence.png" alt="Diagram 3 convergence"><figcaption>Figure 2. Left: Diagram 3 with the adaptive path (blue = A, green = B, orange = C). Right: score against move number for the three strategies.</figcaption></figure>
+
+<h2>6. Two extra operations for the Q3 airport</h2>
+<table>
+  <tr><th style="width:8%">Op</th><th>Definition</th><th>Why it expands the search space</th></tr>
+  <tr><td><b>f</b></td><td><b>Add a new pier:</b> +20 floor area, +2 gates, +8 seats in one move.</td><td>A macro-move. It changes the building footprint, which a&ndash;e can never do (they only remove space).</td></tr>
+  <tr><td><b>g</b></td><td><b>Gate + seats together:</b> +1 gate and +4 waiting units in one move.</td><td>A combined action. It climbs the ridge where gates and seats must grow together.</td></tr>
+</table>
+
+<h3>Impact on the goal state (real run)</h3>
+<table>
+  <tr><th>Method</th><th>Actions</th><th class="num">Designs scored</th><th class="num">Best score</th><th>Best design (gates, counters, area)</th></tr>
+  <tr><td>Hill climbing</td><td>a&ndash;e</td><td class="num">117</td><td class="num">79.40</td><td>14, 13, 100</td></tr>
+  <tr><td>Best-first (400)</td><td>a&ndash;e</td><td class="num">875</td><td class="num">79.40</td><td>14, 13, 100</td></tr>
+  <tr><td>Hill climbing</td><td>a&ndash;g</td><td class="num">158</td><td class="num">82.49</td><td>17, 14, 120</td></tr>
+  <tr class="hl"><td>Best-first (400)</td><td>a&ndash;g</td><td class="num">1856</td><td class="num">82.87</td><td>19, 14, 128</td></tr>
+</table>
+<ul>
+  <li><b>Search alone is not enough.</b> With a&ndash;e, even best-first stays at 79.40, because every design it can reach is no better.</li>
+  <li><b>A bigger action space moves the peak itself.</b> Adding f and g lifts the best score from 79.40 to 82.49 (hill climbing)
+  and 82.87 (best-first). Hill climbing used f once, at move 14.</li>
+  <li>The goal state is no longer the same building. It now has 19 gates and a larger floor, so the <b>goal state moved</b>.</li>
+  <li>The price: about 12 times more designs scored (1856 for best-first vs 158 for hill climbing).</li>
+</ul>
+<figure class="w80"><img src="images/q04_chart2_airport_actions.png" alt="airport scores"><figcaption>Figure 3. Best score found with each method and action set.</figcaption></figure>
+
+<h2>7. Code and real run</h2>
+<figure class="shot"><img src="images/q04_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. Hill-climbing and best-first functions (lines 107&ndash;133) and the real terminal output.</figcaption></figure>
+
+<h2>8. Summary</h2>
+<div class="key">Best-first and hill climbing are both greedy and heuristic. Best-first adds an OPEN list, so it can leave a
+local peak and explore more. Step size (or temperature) controls convergence: big at A, steady at B, shrinking at C. The
+biggest gain came from expanding the <i>action space</i> with f and g, which grew the search space from 650 to 1765
+designs and moved the best score from 79.40 to 82.87.</div>
+
+<p class="files">Files in this folder: <code>q04_code.py</code> (source), <code>q04_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q04_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

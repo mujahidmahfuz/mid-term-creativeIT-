@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q11 - Connectionist vs Reductionist Models and Manhattan IDS for Phone Features</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q11. Connectionist vs Reductionist Models, and Manhattan-Distance Iterative Deepening for Mobile Phone Features</h1>
+</header>
+
+<div class="question"><b>Question.</b> Discuss connectionist and reductionist models. Use Manhattan-distance iterative
+deepening search (Diagram 4) to expand the conceptual space, where every next iteration expands the search space.
+Apply this to designing the features of a mobile phone, using certain paths for expansion as shown in the figure.
+Give pseudocode.</div>
+
+<h2>1. The idea in plain words</h2>
+<p>Think of every possible phone as a point on a map, with one axis per feature (camera, battery, screen, AI chip,
+foldability). Today's phone sits in the middle, like the green dot in Diagram 4. In round 1 we look at every phone that is
+one small step away. In round 2 we look two steps away, and so on. Each round draws a bigger ring around the start, so
+<b>each iteration expands the search space</b>. When the rings stop giving better ideas, we do something bolder: we add a
+new axis to the map (a new feature nobody sells yet). That is <b>expanding the conceptual space</b>, not just searching it.</p>
+
+<h2>2. Connectionist vs reductionist models</h2>
+<table>
+  <tr><th style="width:20%"></th><th>Reductionist model</th><th>Connectionist model</th></tr>
+  <tr><td>Core idea</td><td>Break the whole into parts, understand each part, then build up the whole ("one part at a time")</td>
+      <td>Meaning comes from the <b>connections</b> between many simple units, like neurons in a network</td></tr>
+  <tr><td>View of a phone</td><td>Camera, battery and screen are judged one by one and the scores are added</td>
+      <td>Features affect each other: camera + AI chip = computational photography, bigger screen drains the battery</td></tr>
+  <tr><td>Creativity</td><td>Improve one part at a time (incremental)</td>
+      <td>Find new links and associations between parts (combinational, "everything connects to everything else")</td></tr>
+  <tr><td>Strength</td><td>Clear, explainable, easy to test</td><td>Captures interactions and the whole system (holism)</td></tr>
+  <tr><td>Weakness</td><td>Misses effects that only appear when parts combine</td><td>Harder to explain why a result is good</td></tr>
+</table>
+<p>A good design agent uses both. In our model the <b>search moves are reductionist</b> (change one feature by one
+level), while the <b>evaluation can be connectionist</b>: a learned network that scores how the features work together.</p>
+
+<h2>3. Assumptions</h2>
+<ul>
+  <li>Each feature has discrete levels 0 to 6 (foldable 0 to 2). Today's phone is <b>(camera 3, battery 3, screen 3, AI 2, fold 0)</b>.</li>
+  <li>One action = raise or lower one feature by one level. So the cost between two designs is their <b>Manhattan distance</b>,
+  |&Delta;camera| + |&Delta;battery| + &hellip;</li>
+  <li>Creative score = 0.75 &times; utility + 0.25 &times; novelty. Utility has diminishing returns (too much of a feature costs heat,
+  weight and price). Novelty = distance to the closest phone already on the market (5 known phones).</li>
+  <li>Stop expanding when two rings in a row fail to beat the best score by at least 1 point (a plateau).</li>
+</ul>
+
+<h2>4. Mapping the search to phone design</h2>
+<table>
+  <tr><th style="width:28%">Search term</th><th>Meaning for phone features</th></tr>
+  <tr><td>State</td><td>One phone design, e.g. (3, 3, 3, 2, 0)</td></tr>
+  <tr><td>Start state (green dot)</td><td>Today's phone</td></tr>
+  <tr><td>Action</td><td>One feature up or down by one level</td></tr>
+  <tr><td>Iteration d / depth limit</td><td>Manhattan radius: explore every design with |s &minus; S0|<sub>1</sub> &le; d</td></tr>
+  <tr><td>Ring d (Diagram 4's squares)</td><td>Designs at exactly distance d, which are new in this iteration</td></tr>
+  <tr><td>Preferred path (red arrow)</td><td>A chosen direction, e.g. only camera, screen and AI may change</td></tr>
+  <tr><td>Conceptual space expansion</td><td>Adding a new dimension, e.g. an IoT health sensor</td></tr>
+</table>
+
+<h2>5. Step-by-step approach</h2>
+<ol>
+  <li>Encode today's phone as S0 and set d = 0.</li>
+  <li>Run a depth-limited DFS that never leaves the Manhattan ball of radius d around S0.</li>
+  <li>Score the outer ring (distance exactly d) and keep its best design.</li>
+  <li>If the ring beats the best so far by &ge; 1 point, accept it. Otherwise count a "stale" ring.</li>
+  <li>If two rings in a row are stale, the space is used up (plateau). Otherwise set d = d + 1 and repeat, which expands the search space.</li>
+  <li>At a plateau, expand the conceptual space: add a new feature axis and restart the rings from S0.</li>
+</ol>
+
+<h2>6. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> ManhattanIDS(S0, dims, score):
+    best &larr; S0;  stale &larr; 0
+    <b>for</b> d = 0, 1, 2, ...:                               <span class="c"># each iteration = a bigger ring</span>
+        BALL &larr; DLS(S0, limit = d, dims)                <span class="c"># all s with |s - S0|_1 &le; d</span>
+        RING &larr; { s in BALL : |s - S0|_1 = d }
+        <b>if</b> RING is empty: <b>break</b>                       <span class="c"># whole space covered</span>
+        top &larr; argmax score(s) over RING
+        <b>if</b> score(top) &ge; score(best) + 1: best &larr; top;  stale &larr; 0
+        <b>else</b>: stale &larr; stale + 1
+        <b>if</b> stale = 2: <b>break</b>                           <span class="c"># plateau: rings stopped paying off</span>
+    <b>return</b> best
+
+<b>function</b> DLS(S0, limit, dims):                   <span class="c"># depth-limited DFS inside the ball</span>
+    STACK &larr; [S0];  SEEN &larr; {S0}
+    <b>while</b> STACK not empty:
+        s &larr; STACK.pop()
+        <b>for each</b> feature i in dims, step in {-1, +1}:
+            n &larr; s with feature i changed by step
+            <b>if</b> n valid <b>and</b> n not in SEEN <b>and</b> |n - S0|_1 &le; limit: SEEN.add(n); STACK.push(n)
+    <b>return</b> SEEN
+
+<span class="c"># creative outer loop</span>
+best5 &larr; ManhattanIDS(S0, 5 features)
+<b>if</b> plateau: add "health_sensor" axis;  best6 &larr; ManhattanIDS(S0 + (0), 6 features)</pre>
+
+<figure class="w70"><img src="images/q11_flowchart.png" alt="Manhattan IDS flowchart"><figcaption>Figure 1. Flowchart of Manhattan-distance IDS with conceptual space expansion.</figcaption></figure>
+
+<h2>7. Worked example (real output)</h2>
+<p>The start phone scores <b>48.3</b>: utility 64.4, novelty 0 because it is already on the market. At d = 1 the best
+step is AI 2 &rarr; 3, which gives utility 69.6 and novelty 25 (one step from the nearest market phone):
+0.75 &times; 69.6 + 0.25 &times; 25 = <b>58.4</b>.</p>
+<table>
+  <tr><th class="num">d</th><th class="num">ball size</th><th class="num">new ring</th><th>best design on ring (cam, bat, scr, AI, fold)</th><th class="num">score</th></tr>
+  <tr><td class="num">0</td><td class="num">1</td><td class="num">1</td><td>(3, 3, 3, 2, 0) today's phone</td><td class="num">48.3</td></tr>
+  <tr><td class="num">1</td><td class="num">10</td><td class="num">9</td><td>(3, 3, 3, 3, 0)</td><td class="num">58.4</td></tr>
+  <tr><td class="num">2</td><td class="num">51</td><td class="num">41</td><td>(3, 3, 3, 3, 1)</td><td class="num">68.4</td></tr>
+  <tr><td class="num">3</td><td class="num">178</td><td class="num">127</td><td>(3, 3, 3, 4, 1)</td><td class="num">77.0</td></tr>
+  <tr><td class="num">4</td><td class="num">476</td><td class="num">298</td><td>(4, 3, 3, 4, 1)</td><td class="num">85.4</td></tr>
+  <tr><td class="num">5</td><td class="num">1034</td><td class="num">558</td><td>(4, 4, 3, 4, 1)</td><td class="num">87.3</td></tr>
+  <tr><td class="num">6</td><td class="num">1893</td><td class="num">859</td><td>(4, 4, 3, 4, 2)</td><td class="num">87.6</td></tr>
+  <tr class="hl"><td class="num">7</td><td class="num">2999</td><td class="num">1106</td><td>(4, 4, 3, 5, 2) best</td><td class="num">88.4</td></tr>
+  <tr><td class="num">8</td><td class="num">4201</td><td class="num">1202</td><td>(4, 4, 4, 5, 2)</td><td class="num">88.2</td></tr>
+  <tr><td class="num">9</td><td class="num">5307</td><td class="num">1106</td><td>(5, 4, 4, 5, 2), gain &lt; 1, so plateau</td><td class="num">88.9</td></tr>
+</table>
+<p>Early rings give big jumps (+10 per ring). After d = 4 the gains shrink to almost nothing, while the ball keeps
+growing (5307 designs at d = 9). That is the signal to stop searching harder and start <i>thinking differently</i>.</p>
+<figure class="w50"><img src="images/q11_chart1_rings.png" alt="Rings around the start"><figcaption>Figure 2. Diagram 4 as real data: a camera &times; AI slice of the space. Dashed diamonds are the Manhattan rings d = 1 to 4, and the red arrow points from today's phone towards the best design found.</figcaption></figure>
+<p>In Manhattan distance the rings are diamonds. Diagram 4 draws the same idea as square loops spiralling outwards.</p>
+
+<h2>8. Using certain paths for expansion (the red arrow)</h2>
+<p>Exploring every ring in every direction is expensive. Diagram 4's red arrow suggests following a preferred path. We let
+only <b>camera, screen and AI</b> change (a "camera + smart features" strategy). The real run shows the trade-off:</p>
+<table>
+  <tr><th>Expansion strategy</th><th>Best design</th><th class="num">Score</th><th class="num">States generated</th></tr>
+  <tr><td>Full rings, all 5 features</td><td>(4, 4, 3, 5, 2)</td><td class="num">88.4</td><td class="num">16150</td></tr>
+  <tr><td>Guided path (camera + screen + AI)</td><td>(4, 3, 4, 4, 0)</td><td class="num">81.4</td><td class="num">652 (4% of the work)</td></tr>
+</table>
+<p>The guided path is about 25 times cheaper but misses ideas on the battery and foldable axes. A practical plan is to
+use guided paths for quick ideas, then full rings around the most promising area.</p>
+
+<h2>9. Expanding the conceptual space</h2>
+<p>Searching inside the same five features hits a plateau at 88.4. So we change the space itself and add a new
+dimension: an <b>IoT health sensor</b> (levels 0 to 3). No phone on the market has it, so it brings both usefulness and
+novelty. Re-running the rings in 6 dimensions finds <b>(5, 5, 3, 5, 1, 3) with score 99.3, a jump of +10.9</b> that no amount
+of extra searching in the old space could reach. In course terms, adding a sensor modality changes the space, not merely the data.
+It is the closest thing to <b>transformational</b> creativity in Boden's sense.</p>
+<figure><img src="images/q11_chart2_iterations.png" alt="iterations"><figcaption>Figure 3. Left: states explored in each iteration (log scale), so every round expands the search space. Right: best score per ring. The 6-feature space climbs past the 5-feature plateau.</figcaption></figure>
+
+<h2>10. Code and real run</h2>
+<p><code>q11_code.py</code> runs the full-ring search, the guided search and the 6-dimension search, and draws both charts.</p>
+<figure class="shot"><img src="images/q11_ide_run.png" alt="IDE screenshot"><figcaption>Figure 4. The DLS and Manhattan IDS functions (lines 53-81) and the real terminal output.</figcaption></figure>
+
+<h2>11. Summary</h2>
+<div class="key">Reductionist thinking changes one feature at a time. Connectionist thinking looks at how features work
+together, and a good design agent uses both. Manhattan-distance IDS grows the search space ring by ring around today's
+phone, keeping memory small and finding the nearest good ideas first. Preferred paths (the red arrow) cut the cost by
+96%. When the rings stop paying off, adding a new feature dimension expands the conceptual space and gives the real
+creative jump (88.4 &rarr; 99.3).</div>
+
+<p class="files">Files in this folder: <code>q11_code.py</code> (source), <code>q11_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q11_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>

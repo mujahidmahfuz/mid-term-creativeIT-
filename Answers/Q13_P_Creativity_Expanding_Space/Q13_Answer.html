@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q13 - P-Creativity as a Special Function of H-Creativity</title>
+<link rel="stylesheet" href="../_tools/answer.css">
+</head>
+<body>
+<header class="doc">
+  <div class="course">Creative Thinking for AI &amp; IoT Innovations &middot; Mid-Semester Question Bank</div>
+  <h1>Q13. Psychological Creativity as a Special Function of Historical Creativity</h1>
+</header>
+
+<div class="question"><b>Question.</b> Model psychological (P) creativity as a special function of historical (H) creativity.
+Begin with a constrained search space so most actions can be creative. Slowly expand the space and eliminate states. When no
+state is left, combine the n top-performing states into new states. Continue until no new state falls beyond the final expanded
+space, then deliver the final states ranked (Diagram 5).</div>
+
+<h2>1. The idea in plain words</h2>
+<p><b>H-creativity</b> means the idea is new to the whole world. <b>P-creativity</b> means it is new <i>to me</i>, even if
+others had it before. The only difference is <b>what memory we compare against</b>. H compares with everything humans
+have ever produced. P compares only with what this agent has seen. So P is H with a smaller memory.
+Because the agent knows less than history, anything that is new to history is also new to the agent. Every H-creative idea
+is P-creative, but not the other way round.</p>
+<p>The algorithm then works like a curious person exploring: start with a small, safe area near one idea (so almost
+everything feels new), widen it slowly, throw out weak ideas, and when the area is used up, <b>mix the best ideas
+to make new ones</b> and move on.</p>
+
+<h2>2. Modelling P as a special function of H</h2>
+<table>
+  <tr><th style="width:30%">Measure</th><th>Definition</th></tr>
+  <tr><td>novelty<sub>H</sub>(s)</td><td>min distance from idea s to any idea in the <b>history archive</b></td></tr>
+  <tr><td>novelty<sub>P</sub>(s)</td><td>min distance from s to any idea in the <b>agent archive</b>, where Archive<sub>agent</sub> &sube; Archive<sub>history</sub></td></tr>
+  <tr><td>H-creative</td><td>novelty<sub>H</sub>(s) &ge; &tau; and value(s) is high</td></tr>
+  <tr><td>P-creative</td><td>novelty<sub>P</sub>(s) &ge; &tau; and value(s) is high</td></tr>
+  <tr class="hl"><td>Special-case rule</td><td><b>P(s) = H(s | archive = agent's own memory)</b>. Since the agent archive is a subset, novelty<sub>P</sub> &ge; novelty<sub>H</sub> always.</td></tr>
+</table>
+
+<h2>3. Assumptions</h2>
+<ul>
+  <li>An idea is a point in a 2-D conceptual space (0 to 11.5 on each axis). Its <b>value</b> (usefulness, 0 to 100) comes from a landscape with one broad slope and three hills.</li>
+  <li>The agent starts at idea <b>j = (2, 2)</b>, which has value 12.</li>
+  <li>A pool of 260 candidate ideas is spread over the space. The history archive has 30 ideas and the agent remembers only 7 of them.</li>
+  <li>Novelty threshold &tau; = 1.0. Ideas with value below 14 are weak and are eliminated. n = 4 top states are combined.</li>
+  <li>The search circle starts at radius 1, grows by 1 per round, and is capped at 3 per stage.</li>
+</ul>
+
+<h2>4. Step-by-step approach</h2>
+<ol>
+  <li><b>Constrain:</b> start with a small circle (r = 1) around j. Few states, so most actions are new to the agent.</li>
+  <li><b>Examine and eliminate:</b> visit every unvisited state in the circle. Remove visited states from the space and eliminate those with low value. Keep the good ones.</li>
+  <li><b>Expand slowly:</b> grow r by 1 and repeat, until the cap is reached and no unvisited state is left.</li>
+  <li><b>Combine:</b> take the n best kept states and blend each pair into a new state (a point on the line between them, a little beyond if lucky).</li>
+  <li><b>Move the centre</b> to the best new state (j &rarr; n<sub>1</sub> &rarr; n<sub>2</sub> &hellip;) and start a new small circle there.</li>
+  <li><b>Stop</b> when none of the new states lies beyond the space already covered. Then rank all states by value.</li>
+</ol>
+<figure class="w70"><img src="images/q13_flowchart.png" alt="flowchart"><figcaption>Figure 1. Flowchart of the constrained-then-expanding search.</figcaption></figure>
+
+<h2>5. Pseudocode</h2>
+<pre class="pseudo"><b>function</b> CreativeSearch(pool, j, tau_v, n):
+    centre &larr; j;  VISITED &larr; { };  KEPT &larr; [ ];  COVERED &larr; [ ]
+    <b>repeat</b> (stage = 1, 2, ...):
+        r &larr; r0                                         <span class="c"># small, constrained circle</span>
+        <b>loop</b>:
+            SPACE &larr; { s in pool : s not in VISITED, dist(s, centre) &le; r }
+            KEPT += { s in SPACE : value(s) &ge; tau_v }    <span class="c"># weak states are eliminated</span>
+            VISITED += SPACE                                <span class="c"># visited states are eliminated</span>
+            <b>if</b> r &ge; r_cap: <b>break</b>                         <span class="c"># space is empty</span>
+            r &larr; r + dr                                 <span class="c"># slow expansion</span>
+        COVERED.add(circle(centre, r_cap))
+        TOP &larr; n best of KEPT by value
+        NEW &larr; { blend(a, b) : a, b in TOP }            <span class="c"># combine top performers</span>
+        pool += NEW
+        <b>if</b> no state of NEW is outside COVERED: <b>break</b>
+        centre &larr; best of NEW                           <span class="c"># j -> n -> i</span>
+    <b>return</b> all states ranked by value</pre>
+
+<h2>6. Worked example (real output)</h2>
+<table>
+  <tr><th class="num">Stage</th><th class="num">Radius</th><th class="num">States in space</th><th class="num">Kept</th><th class="num">Eliminated</th><th class="num">New states created</th></tr>
+  <tr><td class="num">1</td><td class="num">1</td><td class="num">7</td><td class="num">2</td><td class="num">5</td><td class="num">0</td></tr>
+  <tr><td class="num">1</td><td class="num">2</td><td class="num">22</td><td class="num">6</td><td class="num">16</td><td class="num">0</td></tr>
+  <tr class="hl"><td class="num">1</td><td class="num">3</td><td class="num">21</td><td class="num">15</td><td class="num">6</td><td class="num">6</td></tr>
+  <tr><td class="num">2</td><td class="num">1 / 2 / 3</td><td class="num">5 / 15 / 26</td><td class="num">5 / 15 / 26</td><td class="num">0</td><td class="num">6 (at r = 3)</td></tr>
+  <tr><td class="num">3</td><td class="num">1 / 2 / 3</td><td class="num">7 / 13 / 21</td><td class="num">7 / 13 / 21</td><td class="num">0</td><td class="num">6 (at r = 3)</td></tr>
+</table>
+<p>At the start the circle around j holds only weak ideas (value around 12), so 5 of 7 are eliminated. By the end of stage 1,
+the circle is empty and the 4 best kept states are blended into 6 new ones. The centre jumps from j to
+<b>(4.1, 4.5)</b>. In stage 2 the circle is already in a better area, so nothing is eliminated and the next jump goes to
+<b>(3.4, 7.9)</b>. In stage 3 the six new states all fall inside the space already covered, so the search stops.</p>
+<figure class="w60"><img src="images/q13_chart1_diagram5_style.png" alt="Diagram 5 style"><figcaption>Figure 2. Diagram 5 with real data. Red circles are the search spaces of stages 1 to 3. The green arrow is the path j &rarr; n<sub>1</sub> &rarr; n<sub>2</sub>. Red stars are the top-ranked ideas. Shading shows value.</figcaption></figure>
+<figure><img src="images/q13_chart2_rounds.png" alt="counts per round"><figcaption>Figure 3. Counts per round. Elimination is heavy in stage 1 and disappears once the centre moves to a good area. New states are created only when a stage ends.</figcaption></figure>
+
+<h2>7. Final ranked set</h2>
+<table>
+  <tr><th>Idea (x, y)</th><th class="num">Value</th><th class="num">novelty<sub>P</sub></th><th class="num">novelty<sub>H</sub></th><th>P-creative</th><th>H-creative</th></tr>
+  <tr><td>(3.3, 8.2)</td><td class="num">85.3</td><td class="num">2.76</td><td class="num">1.76</td><td>yes</td><td>yes</td></tr>
+  <tr><td>(3.4, 7.9)</td><td class="num">85.0</td><td class="num">2.59</td><td class="num">1.44</td><td>yes</td><td>yes</td></tr>
+  <tr><td>(3.0, 8.3)</td><td class="num">83.5</td><td class="num">2.81</td><td class="num">2.01</td><td>yes</td><td>yes</td></tr>
+  <tr><td>(3.1, 8.4)</td><td class="num">83.4</td><td class="num">2.93</td><td class="num">2.05</td><td>yes</td><td>yes</td></tr>
+  <tr><td>(3.8, 8.1)</td><td class="num">83.1</td><td class="num">3.03</td><td class="num">1.60</td><td>yes</td><td>yes</td></tr>
+</table>
+<p>The start idea j had value 12, and the best final idea has value 85.3. Across all 117 states the search kept or created,
+<b>97 are P-creative and 53 are H-creative, and every H-creative one is also P-creative</b>. Figure 4 shows why: no point
+sits above the diagonal.</p>
+<figure class="w50"><img src="images/q13_chart3_p_vs_h.png" alt="novelty P vs H"><figcaption>Figure 4. novelty<sub>H</sub> against novelty<sub>P</sub> for all states. H never exceeds P.</figcaption></figure>
+<div class="note"><b>Honest limit.</b> The search ended on the hill at (3, 8) with value 85. The tallest hill (around (9, 9), value about 100)
+was never reached, because every new state was built from states near the old ones. Restarting from a second idea, or letting
+the combination step extrapolate further, would reach it. This is the same local-maximum problem as hill climbing.</div>
+
+<h2>8. Why start constrained?</h2>
+<p>A small first circle keeps the agent's decisions simple and cheap, and it makes most moves new to this agent (P-creative)
+because it has seen so little. Constraints also focus creativity, as the course notes say. Widening the circle slowly, and
+only combining when the space is empty, is how the agent moves from <i>exploring</i> to <i>combining</i> and toward
+H-creativity. It also corresponds to Boden's forms: exploring inside the space first, then combinational creativity, and a
+shifting centre that gradually transforms the space.</p>
+
+<h2>9. Code and real run</h2>
+<figure class="shot w80"><img src="images/q13_ide_run.png" alt="IDE screenshot"><figcaption>Figure 5. The creative_search function (lines 54-77) and the real terminal output.</figcaption></figure>
+
+<h2>10. Summary</h2>
+<div class="key">P-creativity is H-creativity measured against a smaller memory: novelty<sub>P</sub> &ge; novelty<sub>H</sub>, so every H-creative
+idea is P-creative. The algorithm starts in a small circle, expands it slowly, eliminates visited and weak states, and when the
+space is empty combines the top n states, moving the centre j &rarr; n &rarr; i until no new state lies outside the covered space.
+In the real run, the best idea improved from value 12 to 85.3, with 53 H-creative states among the 117 produced.</div>
+
+<p class="files">Files in this folder: <code>q13_code.py</code> (source), <code>q13_code.ipynb</code> (Colab/Jupyter version, already run),
+<code>q13_output.txt</code> (console output), <code>images/</code> (all figures).</p>
+</body>
+</html>
